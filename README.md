@@ -42,6 +42,22 @@ python auto_fill.py
 
 默认会打开 Chrome 无痕窗口，填写完成后关闭浏览器。默认不会自动提交，需要人工检查后提交。
 
+## 项目结构
+
+```text
+auto_fill.py              兼容入口，转发到 autowal.cli
+autowal/
+  cli.py                  命令行参数解析
+  scheduler.py            主线程调度多线程 worker
+  worker.py               单轮填写和每线程循环执行
+  browser.py              Chrome / Selenium 初始化
+  filler.py               各题型填写逻辑
+  survey.py               问卷数据加载
+  config.py               路径和问卷 URL 配置
+survey_structured.json    结构化问卷题目数据
+survey_raw.json           原始问卷接口数据
+```
+
 ## 常用参数
 
 ```text
@@ -120,6 +136,7 @@ python .\auto_fill.py --headless --seed 123 --threads 3 --loops 5
 
 ```text
 auto_fill.py
+autowal/
 survey_structured.json
 survey_raw.json
 SELECTOR_GUIDE.md
