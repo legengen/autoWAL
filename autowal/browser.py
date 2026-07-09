@@ -5,9 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CHROMEDRIVER = os.path.join(PROJECT_ROOT, "drivers", "chromedriver-win64", "chromedriver.exe")
+from .config import CHROMEDRIVER
 
 
 def init_driver(headless=False):

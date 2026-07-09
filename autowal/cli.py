@@ -26,21 +26,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-from .browser import PROJECT_ROOT, init_driver
+from .browser import init_driver
+from .config import PROJECT_ROOT, SURVEY_JSON, SURVEY_URL
+from .survey import load_survey
 
 # ============================================================
-SURVEY_URL = "https://myd.iscn.org.cn/#/s/yCWFPyRr?sourceID=719419"
-SCRIPT_DIR = PROJECT_ROOT
-SURVEY_JSON = os.path.join(SCRIPT_DIR, "survey_structured.json")
 DEBUG = False
 RADIO_EXCLUDED_OPTIONS = {
     "radio-1779700704962": {"其他"},  # 16. 您的职业身份
 }
-
-
-def load_survey(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 
 def scroll_to(driver, element):
@@ -61,7 +55,7 @@ def close_open_popups(driver):
 
 
 def debug_screenshot(driver, tag):
-    path = os.path.join(SCRIPT_DIR, f"debug_t{threading.get_ident()}_{time.time_ns()}_{tag}.png")
+    path = os.path.join(PROJECT_ROOT, f"debug_t{threading.get_ident()}_{time.time_ns()}_{tag}.png")
     driver.save_screenshot(path)
     print(f"    [debug] 截图: {path}")
 
