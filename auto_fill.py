@@ -33,6 +33,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SURVEY_JSON = os.path.join(SCRIPT_DIR, "survey_structured.json")
 CHROMEDRIVER = os.path.join(SCRIPT_DIR, "drivers", "chromedriver-win64", "chromedriver.exe")
 DEBUG = False
+RADIO_EXCLUDED_OPTIONS = {
+    "radio-1779700704962": {"其他"},  # 16. 您的职业身份
+}
 
 
 def load_survey(path):
@@ -99,8 +102,15 @@ def exec_js(driver, js_code, default=""):
 # ============================================================
 # 单选
 # ============================================================
-def fill_radio(driver, item):
+def radio_options_for_item(item):
     options = item["options"]
+    excluded = RADIO_EXCLUDED_OPTIONS.get(item.get("formItemId"), set())
+    filtered = [opt for opt in options if opt.get("label") not in excluded]
+    return filtered or options
+
+
+def fill_radio(driver, item):
+    options = radio_options_for_item(item)
     picked = random.choice(options)
     label = picked["label"]
     title = item["title"][:40]
