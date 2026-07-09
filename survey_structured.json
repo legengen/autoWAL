@@ -1,0 +1,1303 @@
+[
+  {
+    "index": 32256,
+    "type": "CASCADER",
+    "type_cn": "级联选择",
+    "formItemId": "cascader1781763960123",
+    "title": "1.您上网已经有多少年（网龄）？",
+    "required": true,
+    "options": [
+      {
+        "id": 100,
+        "label": "1-10",
+        "value": "0b84",
+        "children": [
+          {
+            "id": 101,
+            "label": "1",
+            "value": "7c00"
+          },
+          {
+            "id": 102,
+            "label": "2",
+            "value": "d21b"
+          },
+          {
+            "id": 103,
+            "label": "3",
+            "value": "5f8a"
+          },
+          {
+            "id": 104,
+            "label": "4",
+            "value": "80f3"
+          },
+          {
+            "id": 105,
+            "label": "5",
+            "value": "a051"
+          },
+          {
+            "id": 106,
+            "label": "6",
+            "value": "8c0a"
+          },
+          {
+            "id": 107,
+            "label": "7",
+            "value": "2dd7"
+          },
+          {
+            "id": 108,
+            "label": "8",
+            "value": "b232"
+          },
+          {
+            "id": 109,
+            "label": "9",
+            "value": "c9bd"
+          },
+          {
+            "id": 110,
+            "label": "10",
+            "value": "f4ba"
+          }
+        ]
+      },
+      {
+        "id": 111,
+        "label": "11-20",
+        "value": "fc70",
+        "children": [
+          {
+            "id": 112,
+            "label": "11",
+            "value": "13fe"
+          },
+          {
+            "id": 113,
+            "label": "12",
+            "value": "9075"
+          },
+          {
+            "id": 114,
+            "label": "13",
+            "value": "06a4"
+          },
+          {
+            "id": 115,
+            "label": "14",
+            "value": "0ea1"
+          },
+          {
+            "id": 116,
+            "label": "15",
+            "value": "2f9e"
+          },
+          {
+            "id": 117,
+            "label": "16",
+            "value": "b671"
+          },
+          {
+            "id": 118,
+            "label": "17",
+            "value": "486c"
+          },
+          {
+            "id": 119,
+            "label": "18",
+            "value": "3f77"
+          },
+          {
+            "id": 120,
+            "label": "19",
+            "value": "552f"
+          },
+          {
+            "id": 121,
+            "label": "20",
+            "value": "8fec"
+          }
+        ]
+      },
+      {
+        "id": 122,
+        "label": "21-31",
+        "value": "be2b",
+        "children": [
+          {
+            "id": 123,
+            "label": "21",
+            "value": "82f2"
+          },
+          {
+            "id": 124,
+            "label": "22",
+            "value": "5aca"
+          },
+          {
+            "id": 125,
+            "label": "23",
+            "value": "519f"
+          },
+          {
+            "id": 126,
+            "label": "24",
+            "value": "7ed5"
+          },
+          {
+            "id": 127,
+            "label": "25",
+            "value": "e799"
+          },
+          {
+            "id": 128,
+            "label": "26",
+            "value": "66fa"
+          },
+          {
+            "id": 129,
+            "label": "27",
+            "value": "8c34"
+          },
+          {
+            "id": 130,
+            "label": "28",
+            "value": "c97f"
+          },
+          {
+            "id": 131,
+            "label": "29",
+            "value": "2f38"
+          },
+          {
+            "id": 132,
+            "label": "30",
+            "value": "1d14"
+          },
+          {
+            "id": 133,
+            "label": "31",
+            "value": "b03c"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "index": 81920,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779699470812",
+    "title": "2.您平均每天上网的时长是多少小时?",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "少于 1 小时",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "1-2 小时",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "3-4 小时",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "5-6 小时",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "7小时或以上",
+        "value": 5
+      }
+    ]
+  },
+  {
+    "index": 147456,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779699470813",
+    "title": "3.您平均每月花多少钱网费 (包括手机流量和宽带费用)？",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "0-99元",
+        "value": 1779699470811
+      },
+      {
+        "id": "",
+        "label": "100-199元",
+        "value": 1779699470812
+      },
+      {
+        "id": "",
+        "label": "200-299元",
+        "value": 1779699470813
+      },
+      {
+        "id": "",
+        "label": "300-399元",
+        "value": 1779699470814
+      },
+      {
+        "id": "",
+        "label": "400元或以上",
+        "value": 1779699470815
+      }
+    ]
+  },
+  {
+    "index": 212992,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779699470814",
+    "title": "4.您认为目前每月用于上网费用（包括手机流量和宽带费用）的负担如何？",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "费用便宜",
+        "value": 1779699470811
+      },
+      {
+        "id": "",
+        "label": "比较便宜",
+        "value": 1779699470812
+      },
+      {
+        "id": "",
+        "label": "费用适中",
+        "value": 1779699470813
+      },
+      {
+        "id": "",
+        "label": "比较贵，只能省着用",
+        "value": 1779699470814
+      },
+      {
+        "id": "",
+        "label": "太贵了，考虑换套餐",
+        "value": 1779699470815
+      }
+    ]
+  },
+  {
+    "index": 344064,
+    "type": "CHECKBOX",
+    "type_cn": "多选",
+    "formItemId": "checkbox-1779699997836",
+    "title": "5. 您经常使用（每周至少 1 次）的网络应用服务有哪些？（多选）",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "即时通信",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "搜索引擎",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "网络社交",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "网络支付",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "网络购物",
+        "value": 5
+      },
+      {
+        "id": "",
+        "label": "网上外卖",
+        "value": 6
+      },
+      {
+        "id": "",
+        "label": "网络长视频",
+        "value": 7
+      },
+      {
+        "id": "",
+        "label": "短视频/直播",
+        "value": 8
+      },
+      {
+        "id": "",
+        "label": "网络游戏",
+        "value": 9
+      },
+      {
+        "id": "",
+        "label": "网络文学",
+        "value": 10
+      },
+      {
+        "id": "",
+        "label": "旅游出行",
+        "value": 11
+      },
+      {
+        "id": "",
+        "label": "网约车",
+        "value": 12
+      },
+      {
+        "id": "",
+        "label": "互联网医疗",
+        "value": 13
+      },
+      {
+        "id": "",
+        "label": "在线教育",
+        "value": 14
+      },
+      {
+        "id": "",
+        "label": "电子政务",
+        "value": 15
+      },
+      {
+        "id": "",
+        "label": "办公业务",
+        "value": 16
+      },
+      {
+        "id": "",
+        "label": "新闻资讯",
+        "value": 17
+      },
+      {
+        "id": "",
+        "label": "网络音频/音乐/播客",
+        "value": 18
+      },
+      {
+        "id": "",
+        "label": "在线理财/证券",
+        "value": 19
+      },
+      {
+        "id": "",
+        "label": "云服务/网盘",
+        "value": 20
+      },
+      {
+        "id": "",
+        "label": "其他",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "index": 409600,
+    "type": "CHECKBOX",
+    "type_cn": "多选",
+    "formItemId": "checkbox-1779699997837",
+    "title": "6. 过去一年，以下哪些情况符合您的实际？（多选）",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "收到过诈骗电话/短信/邮件，或被诱导进行网络转账",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "点击过不明链接、扫描过可疑二维码，或下载过不明来源软件 ",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "个人账号曾被盗用、异常登录，或遭遇过恶意软件攻击 ",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "收到过精准电话（短信）骚扰/推销",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "多个重要账户使用同一密码，或未开启双重验证 ",
+        "value": 5
+      },
+      {
+        "id": "",
+        "label": "设备系统/软件长期未更新",
+        "value": 6
+      },
+      {
+        "id": "",
+        "label": "重要数据长期未备份",
+        "value": 7
+      },
+      {
+        "id": "",
+        "label": "以上情况均不符合",
+        "value": 8
+      }
+    ]
+  },
+  {
+    "index": 475136,
+    "type": "CHECKBOX",
+    "type_cn": "多选",
+    "formItemId": "checkbox-1779699997838",
+    "title": "7. 您遇到网络安全问题后一般会怎么做？（多选）",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "自行尝试解决（如杀毒、修改密码、询问AI等）",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "向亲友、同事或同学求助",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "向所在单位/学校的相关部门或人员报告",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "向网络服务或产品提供方投诉/求助",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "拨打110或反诈专线96110报警或向公安部“网络违法犯罪举报网站”举报",
+        "value": 5
+      },
+      {
+        "id": "",
+        "label": "向网信办“12377”举报中心举报",
+        "value": 6
+      },
+      {
+        "id": "",
+        "label": "向工信部公共服务电话平台12381热线投诉",
+        "value": 7
+      },
+      {
+        "id": "",
+        "label": "向网络安全相关社会组织反映",
+        "value": 8
+      },
+      {
+        "id": "",
+        "label": "咨询律师",
+        "value": 9
+      },
+      {
+        "id": "",
+        "label": "提起法律诉讼",
+        "value": 10
+      },
+      {
+        "id": "",
+        "label": "不再使用该网络服务或产品",
+        "value": 11
+      },
+      {
+        "id": "",
+        "label": "不采取任何措施",
+        "value": 12
+      }
+    ]
+  },
+  {
+    "index": 557056,
+    "type": "DESC_TEXT",
+    "type_cn": "说明文字",
+    "formItemId": "desc_text1780388600551",
+    "title": "文字描述",
+    "required": false
+  },
+  {
+    "index": 638976,
+    "type": "MATRIX_SCALE",
+    "type_cn": "矩阵评分",
+    "formItemId": "matrix_scale1779765006292",
+    "title": "8.您对当前下列网络安全问题治理的感受如何？\n(成效显著9-10分;成效较好7-8分;一般5-6分;成效不大3-4分;没有成效1-2分)",
+    "required": true,
+    "rows": [
+      {
+        "id": 1779765046391,
+        "label": "网络不良信息治理成效："
+      },
+      {
+        "id": 1779765046392,
+        "label": "网络入侵攻击治理成效："
+      },
+      {
+        "id": 1779765046393,
+        "label": "数据泄露被盗治理成效："
+      },
+      {
+        "id": 1779765046394,
+        "label": "网络诈骗、黑灰产等治理成效："
+      },
+      {
+        "id": 1779765046395,
+        "label": "网络骚扰行为治理成效："
+      }
+    ]
+  },
+  {
+    "index": 655360,
+    "type": "MATRIX_SCALE",
+    "type_cn": "矩阵评分",
+    "formItemId": "matrix_scale1780387046308",
+    "title": "9.您对以下上网相关方面的感受如何？(按感受强度评分,范围1-10分,最高10分,最低1分)",
+    "required": true,
+    "rows": [
+      {
+        "id": 1780645306511,
+        "label": "上网总体安全感："
+      },
+      {
+        "id": 1780645306512,
+        "label": "网络实体和信息的信任度："
+      },
+      {
+        "id": 1780645306513,
+        "label": "网络环境不安定因素（物理、环境、人为、社会等）导致的不确定性/意外风险度："
+      },
+      {
+        "id": 1780645306514,
+        "label": "网络威胁（攻击和侵权行为）的严重性："
+      },
+      {
+        "id": 1780645306515,
+        "label": "网络安全保障的信心度："
+      }
+    ]
+  },
+  {
+    "index": 737280,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779700550752",
+    "title": "10. 与一年前相比，您目前 \"上网总体的安全感\" 有何变化？",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "明显提升",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "略有提升",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "没有变化",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "略有下降",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "明显下降",
+        "value": 5
+      }
+    ]
+  },
+  {
+    "index": 802816,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779700550753",
+    "title": "11. 展望未来一年，您预期自己 “上网总体安全感” 会如何变化？",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "明显提升",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "略有提升",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "没有变化",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "略有下降",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "明显下降",
+        "value": 5
+      }
+    ]
+  },
+  {
+    "index": 835584,
+    "type": "MATRIX_SCALE",
+    "type_cn": "矩阵评分",
+    "formItemId": "matrix_scale1780386592091",
+    "title": "12.您对以下网络安全治理各方面的情况评价如何？(非常满意9-10分;满意7-8分;一般5-6分;不满意3-4分;非常不满意1-2分)",
+    "required": true,
+    "rows": [
+      {
+        "id": 1780386689376,
+        "label": "我国网络空间安全治理总体状况："
+      },
+      {
+        "id": 1780386689377,
+        "label": "网络安全的法治社会建设（如法律法规完善、司法保护水平）："
+      },
+      {
+        "id": 1780386689378,
+        "label": "政府惩治网络犯罪（如打击电信诈骗、黑客攻击、网络黑灰产）："
+      },
+      {
+        "id": 1780386689379,
+        "label": "政府对网络安全的监管和执法："
+      },
+      {
+        "id": 1780386689380,
+        "label": "互联网企业网络安全责任落实："
+      },
+      {
+        "id": 1780386689381,
+        "label": "数字政府服务："
+      }
+    ]
+  },
+  {
+    "index": 1900544,
+    "type": "DESC_TEXT",
+    "type_cn": "说明文字",
+    "formItemId": "desc_text1780655765996",
+    "title": "文字描述",
+    "required": false
+  },
+  {
+    "index": 2965504,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779700704959",
+    "title": "13. 您的性别：",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "男性",
+        "value": 1779700704958
+      },
+      {
+        "id": "",
+        "label": "女性",
+        "value": 1779700704959
+      }
+    ]
+  },
+  {
+    "index": 2998272,
+    "type": "CASCADER",
+    "type_cn": "级联选择",
+    "formItemId": "cascader1781763870534",
+    "title": "14. 您的年龄：",
+    "required": true,
+    "options": [
+      {
+        "id": 100,
+        "label": "10岁以下",
+        "value": "8f0b"
+      },
+      {
+        "id": 101,
+        "label": "10-20",
+        "value": "0360",
+        "children": [
+          {
+            "id": 102,
+            "label": "10",
+            "value": "8df4"
+          },
+          {
+            "id": 103,
+            "label": "11",
+            "value": "afb2"
+          },
+          {
+            "id": 104,
+            "label": "12",
+            "value": "5a1e"
+          },
+          {
+            "id": 105,
+            "label": "13",
+            "value": "2f33"
+          },
+          {
+            "id": 106,
+            "label": "14",
+            "value": "2cc4"
+          },
+          {
+            "id": 107,
+            "label": "15",
+            "value": "8dd8"
+          },
+          {
+            "id": 108,
+            "label": "16",
+            "value": "f591"
+          },
+          {
+            "id": 109,
+            "label": "17",
+            "value": "d040"
+          },
+          {
+            "id": 110,
+            "label": "18",
+            "value": "d5ae"
+          },
+          {
+            "id": 111,
+            "label": "19",
+            "value": "3fda"
+          },
+          {
+            "id": 112,
+            "label": "20",
+            "value": "304e"
+          }
+        ]
+      },
+      {
+        "id": 113,
+        "label": "21-30",
+        "value": "2966",
+        "children": [
+          {
+            "id": 114,
+            "label": "21",
+            "value": "e14c"
+          },
+          {
+            "id": 115,
+            "label": "22",
+            "value": "7d27"
+          },
+          {
+            "id": 116,
+            "label": "23",
+            "value": "ddd8"
+          },
+          {
+            "id": 117,
+            "label": "24",
+            "value": "a4a5"
+          },
+          {
+            "id": 118,
+            "label": "25",
+            "value": "6591"
+          },
+          {
+            "id": 119,
+            "label": "26",
+            "value": "5e3c"
+          },
+          {
+            "id": 120,
+            "label": "27",
+            "value": "2b18"
+          },
+          {
+            "id": 121,
+            "label": "28",
+            "value": "f464"
+          },
+          {
+            "id": 122,
+            "label": "29",
+            "value": "bea4"
+          },
+          {
+            "id": 123,
+            "label": "30",
+            "value": "8770"
+          }
+        ]
+      },
+      {
+        "id": 124,
+        "label": "31-40",
+        "value": "f9fd",
+        "children": [
+          {
+            "id": 125,
+            "label": "31",
+            "value": "a1a9"
+          },
+          {
+            "id": 126,
+            "label": "32",
+            "value": "2903"
+          },
+          {
+            "id": 127,
+            "label": "33",
+            "value": "39c5"
+          },
+          {
+            "id": 128,
+            "label": "34",
+            "value": "a42b"
+          },
+          {
+            "id": 129,
+            "label": "35",
+            "value": "ce9e"
+          },
+          {
+            "id": 130,
+            "label": "36",
+            "value": "2966"
+          },
+          {
+            "id": 131,
+            "label": "37",
+            "value": "3c87"
+          },
+          {
+            "id": 132,
+            "label": "38",
+            "value": "d769"
+          },
+          {
+            "id": 133,
+            "label": "39",
+            "value": "1214"
+          },
+          {
+            "id": 134,
+            "label": "40",
+            "value": "b6a4"
+          }
+        ]
+      },
+      {
+        "id": 135,
+        "label": "41-50",
+        "value": "0eba",
+        "children": [
+          {
+            "id": 136,
+            "label": "41",
+            "value": "2a1b"
+          },
+          {
+            "id": 137,
+            "label": "42",
+            "value": "26db"
+          },
+          {
+            "id": 138,
+            "label": "43",
+            "value": "85d6"
+          },
+          {
+            "id": 139,
+            "label": "44",
+            "value": "01b3"
+          },
+          {
+            "id": 140,
+            "label": "45",
+            "value": "f923"
+          },
+          {
+            "id": 141,
+            "label": "46",
+            "value": "8cd5"
+          },
+          {
+            "id": 142,
+            "label": "47",
+            "value": "756b"
+          },
+          {
+            "id": 143,
+            "label": "48",
+            "value": "dddd"
+          },
+          {
+            "id": 144,
+            "label": "49",
+            "value": "82db"
+          },
+          {
+            "id": 145,
+            "label": "50",
+            "value": "8bd4"
+          }
+        ]
+      },
+      {
+        "id": 146,
+        "label": "51-60",
+        "value": "4dc4",
+        "children": [
+          {
+            "id": 147,
+            "label": "51",
+            "value": "1692"
+          },
+          {
+            "id": 148,
+            "label": "52",
+            "value": "0545"
+          },
+          {
+            "id": 149,
+            "label": "53",
+            "value": "fd4f"
+          },
+          {
+            "id": 150,
+            "label": "54",
+            "value": "01fb"
+          },
+          {
+            "id": 151,
+            "label": "55",
+            "value": "e0a5"
+          },
+          {
+            "id": 152,
+            "label": "56",
+            "value": "2642"
+          },
+          {
+            "id": 153,
+            "label": "57",
+            "value": "b652"
+          },
+          {
+            "id": 154,
+            "label": "58",
+            "value": "438b"
+          },
+          {
+            "id": 155,
+            "label": "59",
+            "value": "83af"
+          },
+          {
+            "id": 156,
+            "label": "60",
+            "value": "2d97"
+          }
+        ]
+      },
+      {
+        "id": 157,
+        "label": "61-70",
+        "value": "d366",
+        "children": [
+          {
+            "id": 158,
+            "label": "61",
+            "value": "8ff5"
+          },
+          {
+            "id": 159,
+            "label": "62",
+            "value": "3a7f"
+          },
+          {
+            "id": 160,
+            "label": "63",
+            "value": "2274"
+          },
+          {
+            "id": 161,
+            "label": "64",
+            "value": "9a98"
+          },
+          {
+            "id": 162,
+            "label": "65",
+            "value": "ecb1"
+          },
+          {
+            "id": 163,
+            "label": "66",
+            "value": "4000"
+          },
+          {
+            "id": 164,
+            "label": "67",
+            "value": "f574"
+          },
+          {
+            "id": 165,
+            "label": "68",
+            "value": "c7c3"
+          },
+          {
+            "id": 166,
+            "label": "69",
+            "value": "1505"
+          },
+          {
+            "id": 167,
+            "label": "70",
+            "value": "13db"
+          }
+        ]
+      },
+      {
+        "id": 168,
+        "label": "70岁以上",
+        "value": "da82"
+      }
+    ]
+  },
+  {
+    "index": 3096576,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779700704961",
+    "title": "15. 您的学历：",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "初中及以下",
+        "value": 1779700704958
+      },
+      {
+        "id": "",
+        "label": "高中",
+        "value": 1779700704959
+      },
+      {
+        "id": "",
+        "label": "中专",
+        "value": 1779700704960
+      },
+      {
+        "id": "",
+        "label": "大专",
+        "value": 1779700704961
+      },
+      {
+        "id": "",
+        "label": "本科",
+        "value": 1779700704962
+      },
+      {
+        "id": "",
+        "label": "硕士",
+        "value": 1779700704963
+      },
+      {
+        "id": "",
+        "label": "博士",
+        "value": 1779700704964
+      }
+    ]
+  },
+  {
+    "index": 3162112,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779700704962",
+    "title": "16. 您的职业身份：",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "公务员 / 事业单位 / 政府工作人员",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "企业工作人员",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "自由职业者（自媒体、个体户等自雇人士）",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "退休人员",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "学生",
+        "value": 5
+      },
+      {
+        "id": "",
+        "label": "其他",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "index": 3227648,
+    "type": "CHECKBOX",
+    "type_cn": "多选",
+    "formItemId": "checkbox-1779700966563",
+    "title": "17. 您在互联网工作生活中主要担任的角色：（多选）",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "平台服务者（互联网平台运营商从业人员）",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "企业服务者（依托互联网平台的中小企电商从业人员）",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "个体服务者（依托电商平台的物流和跑腿等服务人员）",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "信息服务者（互联网媒体和自媒体人员）",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "技术服务者（互联网行业信息技术人员）",
+        "value": 5
+      },
+      {
+        "id": "",
+        "label": "其他服务者（互联网行业其他一般从业人员）",
+        "value": 6
+      },
+      {
+        "id": "",
+        "label": "行业监管者（互联网行业监管人员）",
+        "value": 7
+      },
+      {
+        "id": "",
+        "label": "普通消费者（以上都不是，只是普通网民）",
+        "value": 8
+      }
+    ]
+  },
+  {
+    "index": 3293184,
+    "type": "PROVINCE_CITY",
+    "type_cn": "省市选择",
+    "formItemId": "province_city1779700972110",
+    "title": "18.您现在的常住地是",
+    "required": true
+  },
+  {
+    "index": 3358720,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779701037188",
+    "title": "19. 您目前居住在城镇还是农村？",
+    "required": true,
+    "options": [
+      {
+        "id": "",
+        "label": "城镇",
+        "value": 1779701037187
+      },
+      {
+        "id": "",
+        "label": "农村",
+        "value": 1779701037188
+      }
+    ]
+  },
+  {
+    "index": 3424256,
+    "type": "RADIO",
+    "type_cn": "单选",
+    "formItemId": "radio-1779701037189",
+    "title": "20. 您去年平均每月收入处在哪一个档次？（选答）",
+    "required": false,
+    "options": [
+      {
+        "id": "",
+        "label": "0-1500 元",
+        "value": 1
+      },
+      {
+        "id": "",
+        "label": "1501-3000 元",
+        "value": 2
+      },
+      {
+        "id": "",
+        "label": "3001-5000 元",
+        "value": 3
+      },
+      {
+        "id": "",
+        "label": "5001-10000 元",
+        "value": 4
+      },
+      {
+        "id": "",
+        "label": "10001-20000 元",
+        "value": 5
+      },
+      {
+        "id": "",
+        "label": "大于 20000 元",
+        "value": 6
+      },
+      {
+        "id": "",
+        "label": "不方便透露",
+        "value": 7
+      }
+    ]
+  }
+]
