@@ -17,24 +17,21 @@ import random
 import time
 import os
 import argparse
-import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
+from .browser import PROJECT_ROOT, init_driver
 
 # ============================================================
 SURVEY_URL = "https://myd.iscn.org.cn/#/s/yCWFPyRr?sourceID=719419"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = PROJECT_ROOT
 SURVEY_JSON = os.path.join(SCRIPT_DIR, "survey_structured.json")
-CHROMEDRIVER = os.path.join(SCRIPT_DIR, "drivers", "chromedriver-win64", "chromedriver.exe")
 DEBUG = False
 RADIO_EXCLUDED_OPTIONS = {
     "radio-1779700704962": {"其他"},  # 16. 您的职业身份
@@ -44,29 +41,6 @@ RADIO_EXCLUDED_OPTIONS = {
 def load_survey(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
-
-
-def init_driver(headless=False):
-    opts = Options()
-    if headless:
-        opts.add_argument("--headless=new")
-    opts.add_argument("--window-size=1920,1080")
-    opts.add_argument("--disable-gpu")
-    opts.add_argument("--no-sandbox")
-    opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--user-data-dir=" + tempfile.mkdtemp(prefix="auto-fill-chrome-"))
-    opts.add_argument("--incognito")
-    opts.add_argument("--disable-blink-features=AutomationControlled")
-    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-    opts.add_experimental_option("useAutomationExtension", False)
-    opts.add_argument("--disable-features=TranslateUI")
-
-    service = Service(CHROMEDRIVER) if os.path.exists(CHROMEDRIVER) else None
-    driver = webdriver.Chrome(service=service, options=opts)
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-    })
-    return driver
 
 
 def scroll_to(driver, element):
