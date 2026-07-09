@@ -2,12 +2,13 @@
 """
 自动填写「网民网络安全感满意度调查活动」问卷
 依赖: selenium, chromedriver (Chrome 浏览器)
-用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123]
+用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3]
 
   --debug       每步截图 + 打印详细 DOM 信息
   --headless    无头模式
   --auto-submit 填完自动点击提交
   --seed 123    固定随机种子
+  --loops 3     循环填写 3 次，每次都会重启浏览器打开新页面
 """
 
 import json
@@ -1051,30 +1052,11 @@ def fill_all(driver, survey, auto_submit=False):
         print("（未开启自动提交，请手动检查后点击提交）")
 
 
-def main():
-    global DEBUG
-    parser = argparse.ArgumentParser(description="自动填写网民网络安全感满意度调查问卷")
-    parser.add_argument("--headless", action="store_true")
-    parser.add_argument("--auto-submit", action="store_true")
-    parser.add_argument("--debug", action="store_true", help="每步截图 + DOM 探测")
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--interactive", action="store_true",
-                        help="填写完成后等待按 Enter 才关闭浏览器（默认不等待）")
-    args = parser.parse_args()
-
-    DEBUG = args.debug
-
-    if args.seed is not None:
-        random.seed(args.seed)
-        print(f"随机种子: {args.seed}")
-
-    print(f"加载问卷: {SURVEY_JSON}")
-    survey = load_survey(SURVEY_JSON)
-    print(f"共 {len(survey)} 个表单项\n")
-
+def run_once(survey, args, round_no=1, total_rounds=1):
     driver = init_driver(headless=args.headless)
-
     try:
+        print(f"\n{'='*50}")
+        print(f"第 {round_no}/{total_rounds} 轮")
         print(f"打开页面: {SURVEY_URL}")
         driver.get(SURVEY_URL)
 
@@ -1092,7 +1074,7 @@ def main():
 
         fill_all(driver, survey, auto_submit=args.auto_submit)
 
-        if args.interactive or not args.headless:
+        if args.interactive:
             print("\n按 Enter 关闭浏览器...")
             try:
                 input()
@@ -1111,6 +1093,43 @@ def main():
         time.sleep(3)
     finally:
         driver.quit()
+        print(f"第 {round_no}/{total_rounds} 轮已关闭浏览器")
+
+
+def main():
+    global DEBUG
+    parser = argparse.ArgumentParser(description="自动填写网民网络安全感满意度调查问卷")
+    parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--auto-submit", action="store_true")
+    parser.add_argument("--debug", action="store_true", help="每步截图 + DOM 探测")
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--loops", type=int, default=1, help="循环填写次数，默认 1")
+    parser.add_argument("--loop-delay", type=float, default=1.0, help="每轮结束后的等待秒数，默认 1")
+    parser.add_argument("--interactive", action="store_true",
+                        help="填写完成后等待按 Enter 才关闭浏览器（默认不等待）")
+    args = parser.parse_args()
+
+    if args.loops < 1:
+        parser.error("--loops 必须大于等于 1")
+    if args.loop_delay < 0:
+        parser.error("--loop-delay 不能小于 0")
+
+    DEBUG = args.debug
+
+    if args.seed is not None:
+        random.seed(args.seed)
+        print(f"随机种子: {args.seed}")
+
+    print(f"加载问卷: {SURVEY_JSON}")
+    survey = load_survey(SURVEY_JSON)
+    print(f"共 {len(survey)} 个表单项")
+    print(f"循环次数: {args.loops}\n")
+
+    for round_no in range(1, args.loops + 1):
+        run_once(survey, args, round_no=round_no, total_rounds=args.loops)
+        if round_no < args.loops and args.loop_delay > 0:
+            print(f"等待 {args.loop_delay:g} 秒后开始下一轮...")
+            time.sleep(args.loop_delay)
 
 
 if __name__ == "__main__":
