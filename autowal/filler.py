@@ -21,6 +21,9 @@ def set_debug(enabled):
 RADIO_EXCLUDED_OPTIONS = {
     "radio-1779700704962": {"其他"},  # 16. 您的职业身份
 }
+CHECKBOX_EXCLUDED_OPTIONS = {
+    "checkbox-1779699997836": {"其他"},  # 5. 常用网络应用服务
+}
 
 
 def scroll_to(driver, element):
@@ -141,11 +144,17 @@ def fill_radio(driver, item, rng):
 # ============================================================
 # 多选
 # ============================================================
-def fill_checkbox(driver, item, rng, min_pick=2, max_pick=5):
-    options = [
+def checkbox_options_for_item(item):
+    excluded = CHECKBOX_EXCLUDED_OPTIONS.get(item.get("formItemId"), set())
+    return [
         opt for opt in item["options"]
-        if not any(x in opt["label"] for x in ("均不符合", "不采取任何措施", "以上都不是"))
+        if opt.get("label") not in excluded
+        and not any(x in opt["label"] for x in ("均不符合", "不采取任何措施", "以上都不是"))
     ] or item["options"]
+
+
+def fill_checkbox(driver, item, rng, min_pick=2, max_pick=5):
+    options = checkbox_options_for_item(item)
     n = rng.randint(min_pick, min(max_pick, len(options)))
     picked = rng.sample(options, n)
     picked_labels = [p["label"] for p in picked]
