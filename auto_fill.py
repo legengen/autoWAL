@@ -2,13 +2,14 @@
 """
 自动填写「网民网络安全感满意度调查活动」问卷
 依赖: selenium, chromedriver (Chrome 浏览器)
-用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3]
+用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3] [--threads 2]
 
   --debug       每步截图 + 打印详细 DOM 信息
   --headless    无头模式
   --auto-submit 填完自动点击提交
   --seed 123    固定随机种子
   --loops 3     循环填写 3 次，每次都会重启浏览器打开新页面
+  --threads 2   同时启动 2 个线程，每个线程执行 loops 次
 """
 
 import json
@@ -17,6 +18,8 @@ import time
 import os
 import argparse
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -84,7 +87,7 @@ def close_open_popups(driver):
 
 
 def debug_screenshot(driver, tag):
-    path = os.path.join(SCRIPT_DIR, f"debug_{tag}.png")
+    path = os.path.join(SCRIPT_DIR, f"debug_t{threading.get_ident()}_{time.time_ns()}_{tag}.png")
     driver.save_screenshot(path)
     print(f"    [debug] 截图: {path}")
 
@@ -109,9 +112,9 @@ def radio_options_for_item(item):
     return filtered or options
 
 
-def fill_radio(driver, item):
+def fill_radio(driver, item, rng):
     options = radio_options_for_item(item)
-    picked = random.choice(options)
+    picked = rng.choice(options)
     label = picked["label"]
     title = item["title"][:40]
     form_item_id = item["formItemId"]
@@ -184,13 +187,13 @@ def fill_radio(driver, item):
 # ============================================================
 # 多选
 # ============================================================
-def fill_checkbox(driver, item, min_pick=2, max_pick=5):
+def fill_checkbox(driver, item, rng, min_pick=2, max_pick=5):
     options = [
         opt for opt in item["options"]
         if not any(x in opt["label"] for x in ("均不符合", "不采取任何措施", "以上都不是"))
     ] or item["options"]
-    n = random.randint(min_pick, min(max_pick, len(options)))
-    picked = random.sample(options, n)
+    n = rng.randint(min_pick, min(max_pick, len(options)))
+    picked = rng.sample(options, n)
     picked_labels = [p["label"] for p in picked]
     form_item_id = item["formItemId"]
 
@@ -482,13 +485,13 @@ CASCADER_JS = r"""
 """
 
 
-def fill_cascader(driver, item):
+def fill_cascader(driver, item, rng):
     """用 Selenium 等待级联菜单逐级渲染，避免在 JS busy-wait 中堵住 Vue 更新。"""
     l1_options = item["options"]
-    l1 = random.choice(l1_options)
+    l1 = rng.choice(l1_options)
     l1_label = l1["label"]
     children = l1.get("children", [])
-    l2 = random.choice(children) if children else None
+    l2 = rng.choice(children) if children else None
     l2_label = l2["label"] if l2 else None
     form_item_id = item["formItemId"]
     title = item["title"]
@@ -809,12 +812,12 @@ MATRIX_JS = r"""
 """
 
 
-def fill_matrix_scale(driver, item):
+def fill_matrix_scale(driver, item, rng):
     rows = item.get("rows", [])
     if not rows:
         return
     form_item_id = item["formItemId"]
-    score = random.choice([7, 8, 9])
+    score = rng.choice([7, 8, 9])
     row_labels = [row["label"] for row in rows]
 
     js_code = (MATRIX_JS
@@ -1013,7 +1016,7 @@ def fill_province_city(driver, item):
 # 主流程
 # ============================================================
 
-def fill_all(driver, survey, auto_submit=False):
+def fill_all(driver, survey, rng, auto_submit=False):
     total = len([it for it in survey if it["type"] != "DESC_TEXT"])
     done = 0
 
@@ -1025,20 +1028,20 @@ def fill_all(driver, survey, auto_submit=False):
             continue
 
         if t == "RADIO":
-            fill_radio(driver, item)
+            fill_radio(driver, item, rng)
         elif t == "CHECKBOX":
-            fill_checkbox(driver, item)
+            fill_checkbox(driver, item, rng)
         elif t == "CASCADER":
-            fill_cascader(driver, item)
+            fill_cascader(driver, item, rng)
         elif t == "MATRIX_SCALE":
-            fill_matrix_scale(driver, item)
+            fill_matrix_scale(driver, item, rng)
         elif t == "PROVINCE_CITY":
             fill_province_city(driver, item)
         else:
             print(f"  ? [未知题型] {t}: {item['title'][:30]}")
 
         done += 1
-        time.sleep(random.uniform(0.12, 0.35))
+        time.sleep(rng.uniform(0.12, 0.35))
 
     print(f"\n{'='*50}")
     print(f"填写完成: {done}/{total} 道题已处理")
@@ -1062,11 +1065,11 @@ def fill_all(driver, survey, auto_submit=False):
         print("（未开启自动提交，请手动检查后点击提交）")
 
 
-def run_once(survey, args, round_no=1, total_rounds=1):
+def run_once(survey, args, rng, thread_no=1, round_no=1, total_rounds=1):
     driver = init_driver(headless=args.headless)
     try:
         print(f"\n{'='*50}")
-        print(f"第 {round_no}/{total_rounds} 轮")
+        print(f"线程 {thread_no} 第 {round_no}/{total_rounds} 轮")
         print(f"打开页面: {SURVEY_URL}")
         driver.get(SURVEY_URL)
 
@@ -1082,7 +1085,7 @@ def run_once(survey, args, round_no=1, total_rounds=1):
         if DEBUG:
             debug_screenshot(driver, "page_loaded")
 
-        fill_all(driver, survey, auto_submit=args.auto_submit)
+        fill_all(driver, survey, rng, auto_submit=args.auto_submit)
 
         if args.interactive:
             print("\n按 Enter 关闭浏览器...")
@@ -1094,7 +1097,7 @@ def run_once(survey, args, round_no=1, total_rounds=1):
 
     except TimeoutException:
         print("⚠ 加载超时，强制尝试...")
-        fill_all(driver, survey, auto_submit=False)
+        fill_all(driver, survey, rng, auto_submit=False)
         time.sleep(3)
     except Exception as e:
         print(f"❌ 异常: {e}")
@@ -1103,7 +1106,30 @@ def run_once(survey, args, round_no=1, total_rounds=1):
         time.sleep(3)
     finally:
         driver.quit()
-        print(f"第 {round_no}/{total_rounds} 轮已关闭浏览器")
+        print(f"线程 {thread_no} 第 {round_no}/{total_rounds} 轮已关闭浏览器")
+
+
+def make_thread_rng(seed, thread_no):
+    if seed is None:
+        return random.Random()
+    return random.Random(seed + thread_no - 1)
+
+
+def run_worker(survey, args, thread_no):
+    rng = make_thread_rng(args.seed, thread_no)
+    for round_no in range(1, args.loops + 1):
+        run_once(
+            survey,
+            args,
+            rng,
+            thread_no=thread_no,
+            round_no=round_no,
+            total_rounds=args.loops,
+        )
+        if round_no < args.loops and args.loop_delay > 0:
+            print(f"线程 {thread_no} 等待 {args.loop_delay:g} 秒后开始下一轮...")
+            time.sleep(args.loop_delay)
+    return thread_no
 
 
 def main():
@@ -1115,31 +1141,45 @@ def main():
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--loops", type=int, default=1, help="循环填写次数，默认 1")
     parser.add_argument("--loop-delay", type=float, default=1.0, help="每轮结束后的等待秒数，默认 1")
+    parser.add_argument("--threads", type=int, default=1, help="同时运行的线程数，默认 1")
     parser.add_argument("--interactive", action="store_true",
                         help="填写完成后等待按 Enter 才关闭浏览器（默认不等待）")
     args = parser.parse_args()
 
     if args.loops < 1:
         parser.error("--loops 必须大于等于 1")
+    if args.threads < 1:
+        parser.error("--threads 必须大于等于 1")
     if args.loop_delay < 0:
         parser.error("--loop-delay 不能小于 0")
 
     DEBUG = args.debug
 
     if args.seed is not None:
-        random.seed(args.seed)
         print(f"随机种子: {args.seed}")
 
     print(f"加载问卷: {SURVEY_JSON}")
     survey = load_survey(SURVEY_JSON)
     print(f"共 {len(survey)} 个表单项")
-    print(f"循环次数: {args.loops}\n")
+    print(f"线程数: {args.threads}")
+    print(f"每线程循环次数: {args.loops}")
+    print(f"总填写次数: {args.threads * args.loops}\n")
 
-    for round_no in range(1, args.loops + 1):
-        run_once(survey, args, round_no=round_no, total_rounds=args.loops)
-        if round_no < args.loops and args.loop_delay > 0:
-            print(f"等待 {args.loop_delay:g} 秒后开始下一轮...")
-            time.sleep(args.loop_delay)
+    if args.threads == 1:
+        run_worker(survey, args, thread_no=1)
+        return
+
+    if args.interactive:
+        print("⚠ 多线程模式下不建议使用 --interactive，多个线程可能同时等待输入。")
+
+    with ThreadPoolExecutor(max_workers=args.threads) as executor:
+        futures = [
+            executor.submit(run_worker, survey, args, thread_no)
+            for thread_no in range(1, args.threads + 1)
+        ]
+        for future in as_completed(futures):
+            thread_no = future.result()
+            print(f"线程 {thread_no} 全部循环完成")
 
 
 if __name__ == "__main__":
