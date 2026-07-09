@@ -48,6 +48,7 @@ def init_driver(headless=False):
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--user-data-dir=" + tempfile.mkdtemp(prefix="auto-fill-chrome-"))
+    opts.add_argument("--incognito")
     opts.add_argument("--disable-blink-features=AutomationControlled")
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
