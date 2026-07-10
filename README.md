@@ -160,6 +160,60 @@ python .\auto_fill.py --headless --seed 123 --threads 3 --loops 5
 
 设置 `--seed` 后，每个任务根据 `seed + task_id` 使用独立随机序列，因此即使多线程领取顺序变化，同一任务的随机结果仍可复现。
 
+## XML-RPC 接口
+
+RPC 使用 Python 标准库实现，不需要安装额外依赖。启动服务：
+
+```powershell
+python .\rpc_server.py
+```
+
+服务默认监听 `127.0.0.1:8765`。如需指定地址和端口：
+
+```powershell
+python .\rpc_server.py --host 127.0.0.1 --port 8765
+```
+
+Python 客户端调用示例：
+
+```python
+from xmlrpc.client import ServerProxy
+
+rpc = ServerProxy("http://127.0.0.1:8765", allow_none=True)
+
+print(rpc.ping())
+
+run = rpc.start_run({
+    "threads": 2,
+    "loops": 3,
+    "headless": True,
+    "auto_submit": False,
+    "source_id": "719419",
+})
+run_id = run["run_id"]
+
+print(rpc.get_run(run_id))
+print(rpc.list_runs())
+# rpc.stop_run(run_id)
+```
+
+提供以下接口：
+
+```text
+ping()              检查服务是否可用
+start_run(options)  后台启动一次运行，返回 run_id
+get_run(run_id)     查询运行状态和最终汇总
+list_runs()         查询本进程中的全部运行记录
+stop_run(run_id)    请求停止指定运行
+```
+
+`start_run` 支持 `threads`、`loops`、`loop_delay`、`retries`、`seed`、
+`source_id`、`headless`、`auto_submit` 和 `debug`。未传参数时沿用命令行的安全默认值。
+RPC 模式固定关闭 `interactive`，避免服务端等待终端输入。
+
+RPC 当前没有身份认证，默认仅监听本机。不要直接将端口暴露到公网；远程调用建议通过 SSH
+端口转发访问。
+
 ## 注意事项
 
 - 脚本默认使用 Chrome 无痕模式。
