@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from autowal.control import FillTask
-from autowal.worker import run_once
+from autowal.worker import make_task_rng, run_once
 
 
 def make_args():
@@ -17,6 +17,14 @@ def make_args():
 
 
 class WorkerTests(unittest.TestCase):
+    def test_task_rng_is_stable_and_independent_of_worker_scheduling(self):
+        first = make_task_rng(123, task_id=2).randint(1, 100000)
+        repeated = make_task_rng(123, task_id=2).randint(1, 100000)
+        another_task = make_task_rng(123, task_id=3).randint(1, 100000)
+
+        self.assertEqual(first, repeated)
+        self.assertNotEqual(first, another_task)
+
     @patch("autowal.worker.time.sleep")
     @patch("autowal.worker.fill_all")
     @patch("autowal.worker.WebDriverWait")

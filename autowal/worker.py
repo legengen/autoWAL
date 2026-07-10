@@ -89,7 +89,7 @@ def run_task(survey, args, rng, task: FillTask):
     return run_once(survey, args, rng, task)
 
 
-def make_thread_rng(seed, thread_no):
+def make_task_rng(seed, task_id):
     if seed is None:
         return random.Random()
-    return random.Random(seed + thread_no - 1)
+    return random.Random(seed + task_id - 1)

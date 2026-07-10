@@ -2,7 +2,7 @@ import queue
 import threading
 
 from .control import RunSummary, TaskResult, build_tasks
-from .worker import make_thread_rng, run_task
+from .worker import make_task_rng, run_task
 
 
 _STOP = object()
@@ -48,7 +48,6 @@ class ControlPlane:
         return None
 
     def _worker_loop(self, worker_id):
-        rng = make_thread_rng(self.args.seed, worker_id)
         has_completed_task = False
 
         while not self.stop_event.is_set():
@@ -64,6 +63,7 @@ class ControlPlane:
                     if self.stop_event.wait(self.args.loop_delay):
                         return
 
+                rng = make_task_rng(self.args.seed, task.task_id)
                 result = self._execute_with_retries(task, rng)
                 if result is not None:
                     self.result_queue.put(result)
