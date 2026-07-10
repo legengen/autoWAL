@@ -6,14 +6,12 @@ from typing import List, Optional
 @dataclass(frozen=True)
 class FillTask:
     task_id: int
-    worker_id: int
-    round_no: int
-    total_rounds: int
+    total_tasks: int
     attempt: int = 1
 
     @property
     def label(self):
-        return f"线程 {self.worker_id} 第 {self.round_no}/{self.total_rounds} 轮"
+        return f"任务 {self.task_id}/{self.total_tasks}"
 
     def next_attempt(self):
         return replace(self, attempt=self.attempt + 1)
@@ -64,23 +62,11 @@ class RunSummary:
         return self
 
 
-def build_tasks(thread_count, loops):
-    if thread_count < 1:
-        raise ValueError("thread_count must be at least 1")
-    if loops < 1:
-        raise ValueError("loops must be at least 1")
+def build_tasks(total_tasks):
+    if total_tasks < 1:
+        raise ValueError("total_tasks must be at least 1")
 
     tasks: List[FillTask] = []
-    task_id = 1
-    for worker_id in range(1, thread_count + 1):
-        for round_no in range(1, loops + 1):
-            tasks.append(
-                FillTask(
-                    task_id=task_id,
-                    worker_id=worker_id,
-                    round_no=round_no,
-                    total_rounds=loops,
-                )
-            )
-            task_id += 1
+    for task_id in range(1, total_tasks + 1):
+        tasks.append(FillTask(task_id=task_id, total_tasks=total_tasks))
     return tasks
