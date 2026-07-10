@@ -69,6 +69,8 @@ survey_raw.json           原始问卷接口数据
 --loop-delay 2  每轮之间等待 2 秒，默认 1 秒
 --threads 2     最大并发 worker 数
 --retries 1     单轮失败后最多重试 1 次，默认 0
+--source-id 719419
+                问卷链接中的 6 位 sourceID，默认 719419
 --debug         保存调试截图
 --interactive   每轮结束后等待按 Enter 再关闭浏览器
 ```
@@ -119,6 +121,22 @@ python .\auto_fill.py --headless --threads 3 --loops 5 --retries 2
 ```
 
 运行时按 `Ctrl+C`，控制面会停止后续任务，并等待当前轮次关闭浏览器后退出。
+
+## 自定义 sourceID
+
+默认问卷链接使用：
+
+```text
+sourceID=719419
+```
+
+运行时可以传入任意 6 位数字：
+
+```powershell
+python .\auto_fill.py --headless --source-id 123456
+```
+
+`source-id` 必须恰好为 6 位数字。它按字符串处理，因此像 `001234` 这样的前导零会被保留。
 
 ## 自动提交
 
