@@ -29,6 +29,7 @@ def main():
     parser.add_argument("--loops", type=int, default=1, help="循环填写次数，默认 1")
     parser.add_argument("--loop-delay", type=float, default=1.0, help="每轮结束后的等待秒数，默认 1")
     parser.add_argument("--threads", type=int, default=1, help="同时运行的线程数，默认 1")
+    parser.add_argument("--retries", type=int, default=0, help="单轮失败后的重试次数，默认 0")
     parser.add_argument("--interactive", action="store_true",
                         help="填写完成后等待按 Enter 才关闭浏览器（默认不等待）")
     args = parser.parse_args()
@@ -39,6 +40,8 @@ def main():
         parser.error("--threads 必须大于等于 1")
     if args.loop_delay < 0:
         parser.error("--loop-delay 不能小于 0")
+    if args.retries < 0:
+        parser.error("--retries 不能小于 0")
 
     set_debug(args.debug)
 
