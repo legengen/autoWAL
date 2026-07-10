@@ -4,24 +4,17 @@ from autowal.control import FillTask, RunSummary, TaskResult, build_tasks
 
 
 class FillTaskTests(unittest.TestCase):
-    def test_build_tasks_preserves_worker_and_round_layout(self):
-        tasks = build_tasks(thread_count=2, loops=3)
+    def test_build_tasks_creates_flat_sequence(self):
+        tasks = build_tasks(total_tasks=6)
 
         self.assertEqual(len(tasks), 6)
         self.assertEqual(
-            [(task.task_id, task.worker_id, task.round_no) for task in tasks],
-            [
-                (1, 1, 1),
-                (2, 1, 2),
-                (3, 1, 3),
-                (4, 2, 1),
-                (5, 2, 2),
-                (6, 2, 3),
-            ],
+            [(task.task_id, task.total_tasks) for task in tasks],
+            [(1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6)],
         )
 
     def test_retry_creates_next_attempt_without_mutating_task(self):
-        task = FillTask(task_id=1, worker_id=1, round_no=1, total_rounds=2)
+        task = FillTask(task_id=1, total_tasks=2)
 
         retried = task.next_attempt()
 
@@ -33,8 +26,8 @@ class FillTaskTests(unittest.TestCase):
 class RunSummaryTests(unittest.TestCase):
     def test_records_success_failure_retry_and_cancelled_counts(self):
         summary = RunSummary(total=3)
-        task1 = FillTask(task_id=1, worker_id=1, round_no=1, total_rounds=2)
-        task2 = FillTask(task_id=2, worker_id=1, round_no=2, total_rounds=2, attempt=2)
+        task1 = FillTask(task_id=1, total_tasks=2)
+        task2 = FillTask(task_id=2, total_tasks=2, attempt=2)
 
         summary.record(TaskResult(task=task1, success=True))
         summary.record(TaskResult(task=task2, success=False, error="failed"))

@@ -65,9 +65,9 @@ survey_raw.json           原始问卷接口数据
 --headless      无头模式运行，不显示浏览器窗口
 --auto-submit   填写完成后自动点击提交
 --seed 123      固定随机种子，方便复现同一批随机结果
---loops 3       循环填写 3 次，每次都会重新启动浏览器并打开新页面
+--loops 3       任务数量倍数，与 threads 相乘得到总任务数
 --loop-delay 2  每轮之间等待 2 秒，默认 1 秒
---threads 2     同时启动 2 个线程，每个线程执行 loops 次
+--threads 2     最大并发 worker 数
 --retries 1     单轮失败后最多重试 1 次，默认 0
 --debug         保存调试截图
 --interactive   每轮结束后等待按 Enter 再关闭浏览器
@@ -89,7 +89,7 @@ python .\auto_fill.py --headless --loops 10 --loop-delay 3
 
 ## 多线程填写
 
-同时启动 3 个线程，每个线程循环填写 5 次：
+生成 15 个填写任务，最多同时由 3 个 worker 执行：
 
 ```powershell
 python .\auto_fill.py --headless --threads 3 --loops 5
@@ -101,15 +101,15 @@ python .\auto_fill.py --headless --threads 3 --loops 5
 threads * loops
 ```
 
-例如 `--threads 3 --loops 5` 表示总共填写 15 次。
+例如 `--threads 3 --loops 5` 表示总共填写 15 次，但任务不会预先绑定线程。空闲 worker 会继续从共享队列获取下一个任务，因此每个 worker 实际处理的任务数可能不同。
 
 ## 控制平面
 
 主线程现在只负责控制和观测，不直接填写问卷：
 
 1. 根据 `threads * loops` 生成结构化任务。
-2. 为每个逻辑 worker 建立独立任务队列，保持线程内轮次顺序。
-3. 子线程每次执行一个任务并上报成功、失败、耗时和错误。
+2. 所有任务进入同一个共享工作队列。
+3. 空闲 worker 从共享队列获取下一个任务，并上报成功、失败、耗时和错误。
 4. 主线程持续输出完成进度，最后打印成功、失败、取消和重试汇总。
 
 失败任务默认不重试。允许每轮失败后最多重试 2 次：
@@ -140,7 +140,7 @@ python .\auto_fill.py --headless --auto-submit --threads 3 --loops 5
 python .\auto_fill.py --headless --seed 123 --threads 3 --loops 5
 ```
 
-设置 `--seed` 后，同一批运行会使用可复现的随机序列。多线程模式下，每个线程会使用稳定但不同的随机序列。
+设置 `--seed` 后，每个任务根据 `seed + task_id` 使用独立随机序列，因此即使多线程领取顺序变化，同一任务的随机结果仍可复现。
 
 ## 注意事项
 
