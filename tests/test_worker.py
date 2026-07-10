@@ -7,13 +7,16 @@ from autowal.control import FillTask
 from autowal.worker import make_task_rng, run_once
 
 
-def make_args():
-    return SimpleNamespace(
+def make_args(**overrides):
+    values = dict(
         headless=True,
         debug=False,
         auto_submit=False,
         interactive=False,
+        source_id="719419",
     )
+    values.update(overrides)
+    return SimpleNamespace(**values)
 
 
 class WorkerTests(unittest.TestCase):
@@ -41,11 +44,19 @@ class WorkerTests(unittest.TestCase):
         webdriver_wait.return_value.until.return_value = object()
         task = FillTask(task_id=1, total_tasks=1)
 
-        result = run_once([], make_args(), random.Random(123), task)
+        result = run_once(
+            [],
+            make_args(source_id="123456"),
+            random.Random(123),
+            task,
+        )
 
         self.assertTrue(result.success)
         self.assertIsNone(result.error)
         fill_all.assert_called_once()
+        driver.get.assert_called_once_with(
+            "https://myd.iscn.org.cn/#/s/yCWFPyRr?sourceID=123456"
+        )
         driver.quit.assert_called_once_with()
 
     @patch("autowal.worker.time.sleep")

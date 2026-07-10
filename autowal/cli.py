@@ -2,7 +2,7 @@
 """
 自动填写「网民网络安全感满意度调查活动」问卷
 依赖: selenium, chromedriver (Chrome 浏览器)
-用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3] [--threads 2] [--retries 1]
+用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3] [--threads 2] [--retries 1] [--source-id 719419]
 
   --debug       每步截图 + 打印详细 DOM 信息
   --headless    无头模式
@@ -11,14 +11,22 @@
   --loops 3     任务数量倍数，与 threads 相乘得到总任务数
   --threads 2   最大并发 worker 数
   --retries 1   单轮失败后最多重试 1 次
+  --source-id   问卷链接中的 6 位 sourceID
 """
 
 import argparse
 
-from .config import SURVEY_JSON
+from .config import DEFAULT_SOURCE_ID, SURVEY_JSON, validate_source_id
 from .filler import set_debug
 from .scheduler import run_scheduler
 from .survey import load_survey
+
+
+def parse_source_id(value):
+    try:
+        return validate_source_id(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
 
 
 def main():
@@ -32,6 +40,8 @@ def main():
     parser.add_argument("--loop-delay", type=float, default=1.0, help="每轮结束后的等待秒数，默认 1")
     parser.add_argument("--threads", type=int, default=1, help="最大并发 worker 数，默认 1")
     parser.add_argument("--retries", type=int, default=0, help="单轮失败后的重试次数，默认 0")
+    parser.add_argument("--source-id", type=parse_source_id, default=DEFAULT_SOURCE_ID,
+                        help=f"问卷链接中的 6 位 sourceID，默认 {DEFAULT_SOURCE_ID}")
     parser.add_argument("--interactive", action="store_true",
                         help="填写完成后等待按 Enter 才关闭浏览器（默认不等待）")
     args = parser.parse_args()
