@@ -2,7 +2,7 @@
 """
 自动填写「网民网络安全感满意度调查活动」问卷
 依赖: selenium, chromedriver (Chrome 浏览器)
-用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3] [--threads 2]
+用法: python auto_fill.py [--debug] [--headless] [--auto-submit] [--seed 123] [--loops 3] [--threads 2] [--retries 1]
 
   --debug       每步截图 + 打印详细 DOM 信息
   --headless    无头模式
@@ -10,6 +10,7 @@
   --seed 123    固定随机种子
   --loops 3     循环填写 3 次，每次都会重启浏览器打开新页面
   --threads 2   同时启动 2 个线程，每个线程执行 loops 次
+  --retries 1   单轮失败后最多重试 1 次
 """
 
 import argparse

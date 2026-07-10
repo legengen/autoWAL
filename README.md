@@ -48,8 +48,9 @@ python auto_fill.py
 auto_fill.py              兼容入口，转发到 autowal.cli
 autowal/
   cli.py                  命令行参数解析
-  scheduler.py            主线程调度多线程 worker
-  worker.py               单轮填写和每线程循环执行
+  control.py              任务、结果和运行汇总模型
+  scheduler.py            主线程队列控制面
+  worker.py               子线程单任务执行
   browser.py              Chrome / Selenium 初始化
   filler.py               各题型填写逻辑
   survey.py               问卷数据加载
@@ -67,6 +68,7 @@ survey_raw.json           原始问卷接口数据
 --loops 3       循环填写 3 次，每次都会重新启动浏览器并打开新页面
 --loop-delay 2  每轮之间等待 2 秒，默认 1 秒
 --threads 2     同时启动 2 个线程，每个线程执行 loops 次
+--retries 1     单轮失败后最多重试 1 次，默认 0
 --debug         保存调试截图
 --interactive   每轮结束后等待按 Enter 再关闭浏览器
 ```
@@ -101,6 +103,23 @@ threads * loops
 
 例如 `--threads 3 --loops 5` 表示总共填写 15 次。
 
+## 控制平面
+
+主线程现在只负责控制和观测，不直接填写问卷：
+
+1. 根据 `threads * loops` 生成结构化任务。
+2. 为每个逻辑 worker 建立独立任务队列，保持线程内轮次顺序。
+3. 子线程每次执行一个任务并上报成功、失败、耗时和错误。
+4. 主线程持续输出完成进度，最后打印成功、失败、取消和重试汇总。
+
+失败任务默认不重试。允许每轮失败后最多重试 2 次：
+
+```powershell
+python .\auto_fill.py --headless --threads 3 --loops 5 --retries 2
+```
+
+运行时按 `Ctrl+C`，控制面会停止后续任务，并等待当前轮次关闭浏览器后退出。
+
 ## 自动提交
 
 填写完成后自动提交：
@@ -129,6 +148,7 @@ python .\auto_fill.py --headless --seed 123 --threads 3 --loops 5
 - 职业身份题不会选择「其他」。
 - 不建议在多线程模式下使用 `--interactive`，多个线程可能同时等待输入。
 - 线程数越高，占用的 CPU、内存和浏览器实例越多，云服务器建议从 `--threads 2` 或 `--threads 3` 开始测试。
+- 开发分支和提交规则见 `CONTRIBUTING.md`，禁止直接提交 `main` 和 `develop`。
 
 ## 仓库文件
 
@@ -142,6 +162,7 @@ survey_raw.json
 SELECTOR_GUIDE.md
 requirements.txt
 README.md
+CONTRIBUTING.md
 .gitignore
 ```
 
