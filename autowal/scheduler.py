@@ -2,6 +2,7 @@ import queue
 import threading
 
 from .control import RunSummary, TaskResult, build_tasks
+from .events import EventLogger
 from .worker import make_task_rng, run_task
 
 
@@ -17,6 +18,7 @@ class ControlPlane:
         self.result_queue = queue.Queue()
         self.task_queue = queue.Queue()
         self.threads = []
+        self.events = getattr(args, "event_logger", None) or EventLogger()
 
     def request_stop(self):
         self.stop_event.set()
@@ -37,39 +39,69 @@ class ControlPlane:
                 )
 
             if result.success or current.attempt > retries:
+                self.events.task(
+                    current,
+                    "task.completed" if result.success else "task.failed",
+                    "任务 {} 第 {} 次尝试{}".format(
+                        current.task_id, current.attempt, "成功" if result.success else "失败"
+                    ),
+                    level="INFO" if result.success else "ERROR",
+                    error=result.error,
+                    elapsed_seconds=result.elapsed_seconds,
+                )
                 return result
 
+            self.events.task(
+                current,
+                "task.attempt_failed",
+                "任务 {} 第 {} 次尝试失败".format(current.task_id, current.attempt),
+                level="WARNING",
+                error=result.error,
+                elapsed_seconds=result.elapsed_seconds,
+            )
             current = current.next_attempt()
-            print(
+            self.events.task(
+                current,
+                "task.retrying",
                 f"[重试] 任务 {task.task_id} 将进行第 {current.attempt} 次尝试: "
-                f"{result.error or 'unknown error'}"
+                f"{result.error or 'unknown error'}",
+                level="WARNING",
+                error=result.error,
             )
 
         return None
 
     def _worker_loop(self, worker_id):
         has_completed_task = False
+        try:
+            while not self.stop_event.is_set():
+                task = self.task_queue.get()
+                try:
+                    if task is _STOP:
+                        break
 
-        while not self.stop_event.is_set():
-            task = self.task_queue.get()
-            try:
-                if task is _STOP:
-                    return
+                    if has_completed_task and self.args.loop_delay > 0:
+                        self.events.run(
+                            "worker.waiting",
+                            f"线程 {worker_id} 等待 {self.args.loop_delay:g} 秒后获取下一任务...",
+                            component="scheduler",
+                        )
+                        if self.stop_event.wait(self.args.loop_delay):
+                            break
 
-                if has_completed_task and self.args.loop_delay > 0:
-                    print(
-                        f"线程 {worker_id} 等待 {self.args.loop_delay:g} 秒后获取下一任务..."
-                    )
-                    if self.stop_event.wait(self.args.loop_delay):
-                        return
-
-                rng = make_task_rng(self.args.seed, task.task_id)
-                result = self._execute_with_retries(task, rng)
-                if result is not None:
-                    self.result_queue.put(result)
-                has_completed_task = True
-            finally:
-                self.task_queue.task_done()
+                    rng = make_task_rng(self.args.seed, task.task_id)
+                    result = self._execute_with_retries(task, rng)
+                    if result is not None:
+                        self.result_queue.put(result)
+                    has_completed_task = True
+                finally:
+                    self.task_queue.task_done()
+        finally:
+            self.events.run(
+                "worker.closed",
+                "worker {} 已关闭".format(worker_id),
+                component="scheduler",
+            )
 
     def _start_workers(self, tasks):
         for task in tasks:
@@ -89,16 +121,23 @@ class ControlPlane:
     def _record_result(self, summary, result):
         summary.record(result)
         state = "成功" if result.success else "失败"
-        print(
+        self.events.task(
+            result.task,
+            "task.result_recorded",
             f"[进度] {summary.completed}/{summary.total} "
             f"成功 {summary.succeeded} 失败 {summary.failed} | "
             f"任务 {result.task.task_id} {state} "
-            f"({result.elapsed_seconds:.1f}s)"
+            f"({result.elapsed_seconds:.1f}s)",
+            level="INFO" if result.success else "ERROR",
+            error=result.error,
+            elapsed_seconds=result.elapsed_seconds,
+            component="scheduler",
         )
 
     def run(self):
         tasks = build_tasks(self.args.threads * self.args.loops)
         summary = RunSummary(total=len(tasks))
+        self.events.run("scheduler.started", "调度器启动，共 {} 个内部任务".format(len(tasks)), component="scheduler")
         self._start_workers(tasks)
 
         try:
@@ -112,7 +151,7 @@ class ControlPlane:
 
                 self._record_result(summary, result)
         except KeyboardInterrupt:
-            print("\n[控制] 收到中断请求，停止后续任务并等待当前任务关闭浏览器...")
+            self.events.run("run.interrupt_requested", "收到中断请求，停止后续任务", level="WARNING", component="scheduler")
             self.request_stop()
         finally:
             for thread in self.threads:
@@ -126,11 +165,14 @@ class ControlPlane:
                 self._record_result(summary, result)
 
             summary.finish(cancelled=summary.total - summary.completed)
+            self.events.barrier()
 
-        print(
+        self.events.run(
+            "scheduler.finished",
             f"\n运行汇总: 总计 {summary.total}, 成功 {summary.succeeded}, "
             f"失败 {summary.failed}, 取消 {summary.cancelled}, "
-            f"重试 {summary.retries}, 用时 {summary.duration_seconds:.1f}s"
+            f"重试 {summary.retries}, 用时 {summary.duration_seconds:.1f}s",
+            component="scheduler",
         )
         return summary
 

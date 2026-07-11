@@ -72,6 +72,23 @@ class RunStoreTests(unittest.TestCase):
             self.store.transition_run("run-a", ("pending",), "failed", "run.failed", "failed")
         self.assertEqual("running", self.store.get_run("run-a")["status"])
 
+    def test_recovers_active_runs_as_interrupted(self):
+        self.store.create_run("active", "", {}, run_id="run-active")
+        self.store.create_run("done", "", {}, run_id="run-done")
+        self.store.transition_run(
+            "run-done", ("pending",), "completed", "run.completed", "done",
+            updates={"finished_at": 11.0, "summary_json": {"total": 0}},
+        )
+        recovered = self.store.recover_interrupted_runs(recovered_at=20.0)
+        self.assertEqual(["run-active"], recovered)
+        active = self.store.get_run("run-active")
+        done = self.store.get_run("run-done")
+        self.assertEqual("interrupted", active["status"])
+        self.assertEqual(20.0, active["finished_at"])
+        self.assertEqual("completed", done["status"])
+        events = [row["event_type"] for row in self.store.get_run_logs("run-active")["items"]]
+        self.assertIn("run.interrupted", events)
+
     def test_failed_lifecycle_insert_rolls_back_transition(self):
         self.store.create_run("one", "", {}, run_id="run-a")
         self.store.barrier()

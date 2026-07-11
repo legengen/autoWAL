@@ -139,6 +139,13 @@ class RunStore:
     def barrier(self):
         return self._submit("barrier", {}, wait=True)
 
+    def recover_interrupted_runs(self, recovered_at=None):
+        return self._submit(
+            "recover_interrupted_runs",
+            {"recovered_at": recovered_at if recovered_at is not None else time.time()},
+            wait=True,
+        )
+
     def close(self):
         if self._closed:
             return
@@ -281,6 +288,8 @@ class RunStore:
             return self._create_run(connection, command.payload)
         if command.kind == "transition_run":
             return self._transition_run(connection, command.payload)
+        if command.kind == "recover_interrupted_runs":
+            return self._recover_interrupted_runs(connection, command.payload["recovered_at"])
         if command.kind in ("barrier", "shutdown"):
             with self._error_lock:
                 async_error = self._async_error
@@ -323,6 +332,32 @@ class RunStore:
                 },
             )
         return self.get_run(payload["run_id"])
+
+    def _recover_interrupted_runs(self, connection, recovered_at):
+        recovered = []
+        with connection:
+            rows = connection.execute(
+                "SELECT run_id, status FROM runs WHERE status IN ('pending', 'running', 'stopping')"
+            ).fetchall()
+            for row in rows:
+                connection.execute(
+                    "UPDATE runs SET status = 'interrupted', finished_at = ?, final_error = ? WHERE run_id = ?",
+                    (recovered_at, "server restarted before Run completed", row["run_id"]),
+                )
+                self._insert_run_log(
+                    connection,
+                    {
+                        "run_id": row["run_id"],
+                        "timestamp": recovered_at,
+                        "level": "ERROR",
+                        "component": "recovery",
+                        "event_type": "run.interrupted",
+                        "message": "Run interrupted by server restart",
+                        "error": "previous status: {}".format(row["status"]),
+                    },
+                )
+                recovered.append(row["run_id"])
+        return recovered
 
     @staticmethod
     def _next_run_number(connection, created_at):

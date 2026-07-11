@@ -16,19 +16,19 @@
 
 ## 3. Run Lifecycle Integration
 
-- [ ] 3.1 Extend `start_run` request parsing with name/description metadata, legacy default naming, validation, and persistence-before-thread-start behavior.
-- [ ] 3.2 Keep active `ControlPlane` references in memory while making SQLite the source of truth for public Run records and history.
-- [ ] 3.3 Route pending, running, stopping, completed, failed, and stopped changes through expected-state persistence commands with summary/error timestamps.
-- [ ] 3.4 Add startup recovery that transitions active records to `interrupted`, preserves final records, and recovers stale email `sending` states before accepting RPC.
-- [ ] 3.5 Add lifecycle tests for persistence failure before start, stop/complete races, final-state immutability, restart interruption, and normal shutdown queue flushing.
+- [x] 3.1 Extend `start_run` request parsing with name/description metadata, legacy default naming, validation, and persistence-before-thread-start behavior.
+- [x] 3.2 Keep active `ControlPlane` references in memory while making SQLite the source of truth for public Run records and history.
+- [x] 3.3 Route pending, running, stopping, completed, failed, and stopped changes through expected-state persistence commands with summary/error timestamps.
+- [x] 3.4 Add startup recovery that transitions active records to `interrupted`, preserves final records, and recovers stale email `sending` states before accepting RPC.
+- [x] 3.5 Add lifecycle tests for persistence failure before start, stop/complete races, final-state immutability, restart interruption, and normal shutdown queue flushing.
 
 ## 4. Structured Run and Task Logging
 
-- [ ] 4.1 Define stable lifecycle and task event types plus logging adapters that attach run ID, task ID, attempt, worker, component, level, error, and elapsed time.
-- [ ] 4.2 Replace scheduler and worker execution `print()` paths with structured events while preserving useful console output through logging handlers.
-- [ ] 4.3 Migrate filler operational output to structured task logging and gate DOM/high-volume diagnostic data behind the existing debug option.
-- [ ] 4.4 Insert a persistence barrier before every final Run transition so all prior task logs are queryable when the final state becomes visible.
-- [ ] 4.5 Add multi-Run/multi-worker tests for log attribution, retry attempt identity, event ordering, sensitive-value sanitization, and debug gating.
+- [x] 4.1 Define stable lifecycle and task event types plus logging adapters that attach run ID, task ID, attempt, worker, component, level, error, and elapsed time.
+- [x] 4.2 Replace scheduler and worker execution `print()` paths with structured events while preserving useful console output through logging handlers.
+- [x] 4.3 Migrate filler operational output to structured task logging and gate DOM/high-volume diagnostic data behind the existing debug option.
+- [x] 4.4 Insert a persistence barrier before every final Run transition so all prior task logs are queryable when the final state becomes visible.
+- [x] 4.5 Add multi-Run/multi-worker tests for log attribution, retry attempt identity, event ordering, sensitive-value sanitization, and debug gating.
 
 ## 5. Final Email Notification
 
