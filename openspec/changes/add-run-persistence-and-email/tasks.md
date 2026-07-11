@@ -40,8 +40,8 @@
 
 ## 6. XML-RPC and Go Client
 
-- [ ] 6.1 Extend XML-RPC Run models and methods with number/name/description/email fields, bounded history pagination, Run log cursor queries, and task log filters.
-- [ ] 6.2 Add Python RPC contract tests covering legacy start requests, named requests, persistent history after service recreation, cursors, invalid limits, and missing Runs.
+- [x] 6.1 Extend XML-RPC Run models and methods with number/name/description/email fields, bounded history pagination, Run log cursor queries, and task log filters.
+- [x] 6.2 Add Python RPC contract tests covering legacy start requests, named requests, persistent history after service recreation, cursors, invalid limits, and missing Runs.
 - [ ] 6.3 Extend Go RPC models/client methods and XML-RPC compatibility fixtures for nullable persistent fields, pagination, and both log response types.
 - [ ] 6.4 Add required Run-name and optional-purpose controls to the Wails start form and display number, metadata, email status, and delivery errors in history/detail views.
 - [ ] 6.5 Add incremental Run/task log views with bounded polling, task/attempt filters, empty/loading/error states, and no log payload in the existing Run-list polling path.

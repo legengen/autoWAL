@@ -1,6 +1,5 @@
 import threading
 import time
-import uuid
 import os
 from types import SimpleNamespace
 from xmlrpc.server import SimpleXMLRPCServer
@@ -80,8 +79,39 @@ class RpcService:
         record = self._store.get_run(run_id)
         return record if record is not None else {"ok": False, "error": "run not found"}
 
-    def list_runs(self):
-        return self._store.list_runs(limit=100)["items"]
+    def list_runs(self, query=None):
+        if query is None:
+            return self._store.list_runs(limit=100)["items"]
+        query = self._validate_query(query, {"limit", "cursor"})
+        return self._store.list_runs(
+            limit=query.get("limit", 100), cursor=query.get("cursor") or None
+        )
+
+    def get_run_logs(self, query):
+        query = self._validate_query(query, {"run_id", "after_log_id", "limit"})
+        run_id = self._require_run_id(query)
+        if self._store.get_run(run_id) is None:
+            return {"ok": False, "error": "run not found"}
+        return self._store.get_run_logs(
+            run_id,
+            after_log_id=query.get("after_log_id", 0),
+            limit=query.get("limit", 200),
+        )
+
+    def get_task_logs(self, query):
+        query = self._validate_query(
+            query, {"run_id", "after_log_id", "limit", "task_id", "attempt"}
+        )
+        run_id = self._require_run_id(query)
+        if self._store.get_run(run_id) is None:
+            return {"ok": False, "error": "run not found"}
+        return self._store.get_task_logs(
+            run_id,
+            after_log_id=query.get("after_log_id", 0),
+            limit=query.get("limit", 200),
+            task_id=query.get("task_id"),
+            attempt=query.get("attempt"),
+        )
 
     def stop_run(self, run_id):
         record = self._store.get_run(run_id)
@@ -226,6 +256,22 @@ class RpcService:
         if len(value) > maximum:
             raise ValueError("{} must not exceed {} characters".format(name, maximum))
         return value
+
+    @staticmethod
+    def _validate_query(query, allowed):
+        if not isinstance(query, dict):
+            raise ValueError("query must be a struct")
+        unknown = set(query) - allowed
+        if unknown:
+            raise ValueError("unknown query fields: {}".format(", ".join(sorted(unknown))))
+        return query
+
+    @staticmethod
+    def _require_run_id(query):
+        run_id = query.get("run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            raise ValueError("run_id is required")
+        return run_id.strip()
 
 
 def serve(host="127.0.0.1", port=8765, data_dir=None):
