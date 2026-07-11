@@ -2,7 +2,7 @@ import queue
 import threading
 
 from .control import RunSummary, TaskResult, build_tasks
-from .worker import make_thread_rng, run_task
+from .worker import make_task_rng, run_task
 
 
 _STOP = object()
@@ -15,10 +15,7 @@ class ControlPlane:
         self.task_runner = task_runner
         self.stop_event = threading.Event()
         self.result_queue = queue.Queue()
-        self.task_queues = {
-            worker_id: queue.Queue()
-            for worker_id in range(1, args.threads + 1)
-        }
+        self.task_queue = queue.Queue()
         self.threads = []
 
     def request_stop(self):
@@ -51,36 +48,34 @@ class ControlPlane:
         return None
 
     def _worker_loop(self, worker_id):
-        task_queue = self.task_queues[worker_id]
-        rng = make_thread_rng(self.args.seed, worker_id)
+        has_completed_task = False
 
         while not self.stop_event.is_set():
-            task = task_queue.get()
+            task = self.task_queue.get()
             try:
                 if task is _STOP:
                     return
 
+                if has_completed_task and self.args.loop_delay > 0:
+                    print(
+                        f"线程 {worker_id} 等待 {self.args.loop_delay:g} 秒后获取下一任务..."
+                    )
+                    if self.stop_event.wait(self.args.loop_delay):
+                        return
+
+                rng = make_task_rng(self.args.seed, task.task_id)
                 result = self._execute_with_retries(task, rng)
                 if result is not None:
                     self.result_queue.put(result)
-
-                if (
-                    not self.stop_event.is_set()
-                    and task.round_no < task.total_rounds
-                    and self.args.loop_delay > 0
-                ):
-                    print(
-                        f"线程 {worker_id} 等待 {self.args.loop_delay:g} 秒后开始下一轮..."
-                    )
-                    self.stop_event.wait(self.args.loop_delay)
+                has_completed_task = True
             finally:
-                task_queue.task_done()
+                self.task_queue.task_done()
 
     def _start_workers(self, tasks):
         for task in tasks:
-            self.task_queues[task.worker_id].put(task)
-        for task_queue in self.task_queues.values():
-            task_queue.put(_STOP)
+            self.task_queue.put(task)
+        for _ in range(self.args.threads):
+            self.task_queue.put(_STOP)
 
         for worker_id in range(1, self.args.threads + 1):
             thread = threading.Thread(
@@ -102,7 +97,7 @@ class ControlPlane:
         )
 
     def run(self):
-        tasks = build_tasks(self.args.threads, self.args.loops)
+        tasks = build_tasks(self.args.threads * self.args.loops)
         summary = RunSummary(total=len(tasks))
         self._start_workers(tasks)
 
@@ -142,7 +137,7 @@ class ControlPlane:
 
 def run_scheduler(survey, args):
     print(f"线程数: {args.threads}")
-    print(f"每线程循环次数: {args.loops}")
+    print(f"任务倍数: {args.loops}")
     print(f"总填写次数: {args.threads * args.loops}")
     print(f"失败重试次数: {args.retries}\n")
 

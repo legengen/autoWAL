@@ -21,6 +21,12 @@ def make_args(**overrides):
 
 
 class ControlPlaneTests(unittest.TestCase):
+    def test_uses_one_shared_task_queue(self):
+        plane = ControlPlane([], make_args())
+
+        self.assertTrue(hasattr(plane, "task_queue"))
+        self.assertFalse(hasattr(plane, "task_queues"))
+
     @patch("builtins.print")
     def test_dispatches_all_tasks_and_aggregates_success(self, _print):
         seen = []
@@ -28,7 +34,7 @@ class ControlPlaneTests(unittest.TestCase):
 
         def runner(_survey, _args, _rng, task):
             with seen_lock:
-                seen.append((task.worker_id, task.round_no))
+                seen.append(task.task_id)
             return TaskResult(task=task, success=True, elapsed_seconds=0.01)
 
         summary = ControlPlane([], make_args(), task_runner=runner).run()
@@ -37,10 +43,7 @@ class ControlPlaneTests(unittest.TestCase):
         self.assertEqual(summary.succeeded, 6)
         self.assertEqual(summary.failed, 0)
         self.assertEqual(summary.cancelled, 0)
-        self.assertEqual(
-            sorted(seen),
-            [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (2, 3)],
-        )
+        self.assertEqual(sorted(seen), [1, 2, 3, 4, 5, 6])
 
     @patch("builtins.print")
     def test_retries_failed_task_and_records_retry(self, _print):

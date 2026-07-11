@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .browser import init_driver
-from .config import SURVEY_URL
+from .config import build_survey_url
 from .control import FillTask, TaskResult
 from .filler import debug_screenshot, fill_all
 
@@ -19,13 +19,14 @@ def run_once(survey, args, rng, task: FillTask):
     driver = None
     success = False
     error = None
+    survey_url = build_survey_url(args.source_id)
 
     try:
         driver = init_driver(headless=args.headless)
         print(f"\n{'='*50}")
         print(task.label)
-        print(f"打开页面: {SURVEY_URL}")
-        driver.get(SURVEY_URL)
+        print(f"打开页面: {survey_url}")
+        driver.get(survey_url)
 
         print("等待渲染...")
         WebDriverWait(driver, 60).until(
@@ -89,7 +90,7 @@ def run_task(survey, args, rng, task: FillTask):
     return run_once(survey, args, rng, task)
 
 
-def make_thread_rng(seed, thread_no):
+def make_task_rng(seed, task_id):
     if seed is None:
         return random.Random()
-    return random.Random(seed + thread_no - 1)
+    return random.Random(seed + task_id - 1)
