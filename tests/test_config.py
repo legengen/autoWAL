@@ -1,6 +1,8 @@
+import os
 import unittest
+from unittest.mock import patch
 
-from autowal.config import DEFAULT_SOURCE_ID, build_survey_url, validate_source_id
+from autowal.config import DEFAULT_SOURCE_ID, build_survey_url, resolve_data_dir, validate_source_id
 
 
 class SourceIdTests(unittest.TestCase):
@@ -23,6 +25,11 @@ class SourceIdTests(unittest.TestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
                     validate_source_id(value)
+
+    def test_data_dir_is_absolute_and_configurable(self):
+        with patch.dict(os.environ, {"AUTOWAL_DATA_DIR": "relative-data"}):
+            self.assertTrue(os.path.isabs(resolve_data_dir()))
+            self.assertTrue(resolve_data_dir().endswith("relative-data"))
 
 
 if __name__ == "__main__":

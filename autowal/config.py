@@ -7,6 +7,7 @@ SURVEY_BASE_URL = "https://myd.iscn.org.cn/#/s/yCWFPyRr"
 DEFAULT_SOURCE_ID = "719419"
 SURVEY_JSON = os.path.join(PROJECT_ROOT, "survey_structured.json")
 CHROMEDRIVER = os.path.join(PROJECT_ROOT, "drivers", "chromedriver-win64", "chromedriver.exe")
+DEFAULT_DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 
 def validate_source_id(value):
@@ -21,3 +22,8 @@ def build_survey_url(source_id=DEFAULT_SOURCE_ID):
 
 
 SURVEY_URL = build_survey_url()
+
+
+def resolve_data_dir(value=None):
+    configured = value or os.environ.get("AUTOWAL_DATA_DIR") or DEFAULT_DATA_DIR
+    return os.path.abspath(os.path.expanduser(configured))

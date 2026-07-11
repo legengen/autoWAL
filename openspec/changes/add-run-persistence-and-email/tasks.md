@@ -1,18 +1,18 @@
 ## 1. SQLite Schema and Repository
 
-- [ ] 1.1 Add data-directory configuration and resolve an absolute `autowal.db` path without logging secrets or environment values.
-- [ ] 1.2 Implement transactional schema initialization and `PRAGMA user_version` migration for `runs`, `run_logs`, `task_logs`, indexes, WAL, foreign keys, and busy timeout.
-- [ ] 1.3 Implement Run row serialization for options/summary JSON, timestamps, email fields, UUID identity, and atomic unique readable-number allocation.
-- [ ] 1.4 Add repository read methods for a Run, cursor-paginated Run history, Run logs, and filtered task logs using separate read connections.
-- [ ] 1.5 Add isolated SQLite tests for first startup, migration, unsupported newer schema, number uniqueness, pagination, and JSON/null round trips.
+- [x] 1.1 Add data-directory configuration and resolve an absolute `autowal.db` path without logging secrets or environment values.
+- [x] 1.2 Implement transactional schema initialization and `PRAGMA user_version` migration for `runs`, `run_logs`, `task_logs`, indexes, WAL, foreign keys, and busy timeout.
+- [x] 1.3 Implement Run row serialization for options/summary JSON, timestamps, email fields, UUID identity, and atomic unique readable-number allocation.
+- [x] 1.4 Add repository read methods for a Run, cursor-paginated Run history, Run logs, and filtered task logs using separate read connections.
+- [x] 1.5 Add isolated SQLite tests for first startup, migration, unsupported newer schema, number uniqueness, pagination, and JSON/null round trips.
 
 ## 2. Single Database Writer
 
-- [ ] 2.1 Define typed persistence commands and result/error channels for create, transition, Run log, task log, email state, recovery, barrier, and shutdown operations.
-- [ ] 2.2 Implement the bounded FIFO persistence queue and one writer thread with batching for adjacent standalone log inserts and blocking backpressure.
-- [ ] 2.3 Implement conditional Run transitions that atomically update `runs` and insert the corresponding `run_logs` event.
-- [ ] 2.4 Implement barrier and graceful-shutdown semantics that confirm all earlier commands are committed before finalization or connection close.
-- [ ] 2.5 Add concurrency tests proving workers never write SQLite directly, events retain Run/task context, queue saturation does not drop logs, and failed lifecycle inserts roll back state changes.
+- [x] 2.1 Define typed persistence commands and result/error channels for create, transition, Run log, task log, email state, recovery, barrier, and shutdown operations.
+- [x] 2.2 Implement the bounded FIFO persistence queue and one writer thread with batching for adjacent standalone log inserts and blocking backpressure.
+- [x] 2.3 Implement conditional Run transitions that atomically update `runs` and insert the corresponding `run_logs` event.
+- [x] 2.4 Implement barrier and graceful-shutdown semantics that confirm all earlier commands are committed before finalization or connection close.
+- [x] 2.5 Add concurrency tests proving workers never write SQLite directly, events retain Run/task context, queue saturation does not drop logs, and failed lifecycle inserts roll back state changes.
 
 ## 3. Run Lifecycle Integration
 
