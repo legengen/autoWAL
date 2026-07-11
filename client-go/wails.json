@@ -2,11 +2,18 @@
   "$schema": "https://wails.io/schemas/config.v2.json",
   "name": "autowal-client",
   "outputfilename": "autoWAL-client",
-  "frontend:install": "npm install",
+  "frontend:install": "npm ci",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "autoWAL"
+  },
+  "info": {
+    "companyName": "autoWAL",
+    "productName": "autoWAL Client",
+    "productVersion": "0.2.0.0",
+    "copyright": "Copyright 2026 autoWAL",
+    "comments": "autoWAL XML-RPC desktop client"
   }
 }
