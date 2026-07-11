@@ -183,9 +183,10 @@ function renderRuns() {
   }
   runsBody.innerHTML = runs.map((run) => {
     const progress = run.summary ? `${run.summary.completed}/${run.summary.total}` : run.status === 'running' ? '执行中' : '—'
+    const state = safeStatus(run.status)
     return `<tr data-run-id="${escapeHTML(run.run_id)}" class="${run.run_id === selectedRunID ? 'selected' : ''}">
-      <td><strong class="run-id">${shortID(run.run_id)}</strong><small>${formatDate(run.created_at)}</small></td>
-      <td><span class="status ${run.status}"><span></span>${statusLabel(run.status)}</span></td>
+      <td><strong class="run-id">${escapeHTML(shortID(run.run_id))}</strong><small>${formatDate(run.created_at)}</small></td>
+      <td><span class="status ${state.className}"><span></span>${state.label}</span></td>
       <td>${progress}</td><td>${formatDuration(run)}</td>
     </tr>`
   }).join('')
@@ -207,8 +208,9 @@ function renderDetail() {
   }
   const summary = run.summary
   const canStop = ['pending', 'running', 'stopping'].includes(run.status)
+  const state = safeStatus(run.status)
   detailPanel.innerHTML = `
-    <div class="detail-header"><div><span class="status ${run.status}"><span></span>${statusLabel(run.status)}</span><h3>${escapeHTML(run.run_id)}</h3></div>
+    <div class="detail-header"><div><span class="status ${state.className}"><span></span>${state.label}</span><h3>${escapeHTML(run.run_id)}</h3></div>
       ${canStop ? '<button id="stop-button" class="button danger"><i data-lucide="square"></i><span>停止任务</span></button>' : ''}
     </div>
     <div class="metrics">
@@ -301,8 +303,16 @@ function formatDate(timestamp: number) {
   return new Date(timestamp * 1000).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
-function statusLabel(status: string) {
-  return ({ pending: '等待中', running: '运行中', completed: '已完成', failed: '失败', stopping: '停止中', stopped: '已停止' } as Record<string, string>)[status] ?? status
+function safeStatus(status: string) {
+  const states: Record<string, { className: string; label: string }> = {
+    pending: { className: 'pending', label: '等待中' },
+    running: { className: 'running', label: '运行中' },
+    completed: { className: 'completed', label: '已完成' },
+    failed: { className: 'failed', label: '失败' },
+    stopping: { className: 'stopping', label: '停止中' },
+    stopped: { className: 'stopped', label: '已停止' },
+  }
+  return states[status] ?? { className: 'unknown', label: '未知状态' }
 }
 
 function renderIcons() {
