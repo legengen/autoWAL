@@ -1,0 +1,6 @@
+frontend/node_modules/
+frontend/dist/*
+!frontend/dist/placeholder.txt
+frontend/wailsjs/
+build/bin/
+*.exe

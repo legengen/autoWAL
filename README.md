@@ -214,6 +214,30 @@ RPC 模式固定关闭 `interactive`，避免服务端等待终端输入。
 RPC 当前没有身份认证，默认仅监听本机。不要直接将端口暴露到公网；远程调用建议通过 SSH
 端口转发访问。
 
+## Go 桌面客户端
+
+`client-go/` 提供基于 Wails v2 的轻量桌面客户端。XML-RPC 请求由 Go 后端发送，前端不受
+浏览器 CORS 限制。客户端支持连接服务器、启动任务、每 2 秒刷新运行列表、查看详情、
+停止任务和操作日志。
+
+开发运行：
+
+```powershell
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.13.0
+cd client-go
+wails dev
+```
+
+构建 Windows 客户端：
+
+```powershell
+cd client-go
+wails build -clean
+```
+
+产物位于 `client-go/build/bin/autoWAL-client.exe`。推送 `client-v*` 标签时，GitHub Actions
+会构建 Windows、Linux 和 macOS 客户端并附加到 Release。
+
 ## 注意事项
 
 - 脚本默认使用 Chrome 无痕模式。
