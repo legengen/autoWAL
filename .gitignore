@@ -7,3 +7,4 @@ drivers/
 known-good-versions-with-downloads.json
 latest-patch-versions-per-build-with-downloads.json
 debug_*.png
+data/

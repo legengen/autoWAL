@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from .config import PROJECT_ROOT
+from .events import emit_task_output as _emit
 
 DEBUG = False
 
@@ -46,7 +47,7 @@ def close_open_popups(driver):
 def debug_screenshot(driver, tag):
     path = os.path.join(PROJECT_ROOT, f"debug_t{threading.get_ident()}_{time.time_ns()}_{tag}.png")
     driver.save_screenshot(path)
-    print(f"    [debug] 截图: {path}")
+    _emit(f"    [debug] 截图: {path}")
 
 
 def exec_js(driver, js_code, default=""):
@@ -55,7 +56,7 @@ def exec_js(driver, js_code, default=""):
         result = driver.execute_script(js_code)
         return result if result is not None else default
     except Exception as e:
-        print(f"    [JS异常] {e}")
+        _emit(f"    [JS异常] {e}")
         return default
 
 
@@ -118,7 +119,7 @@ def fill_radio(driver, item, rng):
         """, form_item_id, label)
 
         if not target:
-            print(f"  ✗ [单选] {title} 失败: option_not_found → {label}")
+            _emit(f"  ✗ [单选] {title} 失败: option_not_found → {label}")
             return
 
         scroll_to(driver, target)
@@ -134,11 +135,11 @@ def fill_radio(driver, item, rng):
         """, target)
 
         if ok:
-            print(f"  ✓ [单选] {title}  →  {label}")
+            _emit(f"  ✓ [单选] {title}  →  {label}")
         else:
-            print(f"  ✗ [单选] {title} 失败: not_checked → {label}")
+            _emit(f"  ✗ [单选] {title} 失败: not_checked → {label}")
     except Exception as e:
-        print(f"  ✗ [单选] {item['title'][:30]}  错误: {e}")
+        _emit(f"  ✗ [单选] {item['title'][:30]}  错误: {e}")
 
 
 # ============================================================
@@ -236,11 +237,11 @@ def fill_checkbox(driver, item, rng, min_pick=2, max_pick=5):
 
         short = ", ".join(p[:12] for p in picked_labels)
         if len(clicked_labels) == len(picked_labels):
-            print(f"  ✓ [多选] {item['title'][:35]}  →  勾 {n} 项: {short}")
+            _emit(f"  ✓ [多选] {item['title'][:35]}  →  勾 {n} 项: {short}")
         else:
-            print(f"  ✗ [多选] {item['title'][:30]}  失败: {len(clicked_labels)}/{len(picked_labels)} 项选中")
+            _emit(f"  ✗ [多选] {item['title'][:30]}  失败: {len(clicked_labels)}/{len(picked_labels)} 项选中")
     except Exception as e:
-        print(f"  ✗ [多选] {item['title'][:30]}  错误: {e}")
+        _emit(f"  ✗ [多选] {item['title'][:30]}  错误: {e}")
 
 
 # ============================================================
@@ -539,7 +540,7 @@ def fill_cascader(driver, item, rng):
         """, form_item_id, title, placeholder)
 
         if not target_input:
-            print(f"  ✗ [级联] {title[:30]}  失败: input_not_found")
+            _emit(f"  ✗ [级联] {title[:30]}  失败: input_not_found")
             return
 
         scroll_to(driver, target_input)
@@ -621,14 +622,14 @@ def fill_cascader(driver, item, rng):
 
         l1_result = wait_click(0, l1_label)
         if not l1_result.get("ok"):
-            print(f"  ✗ [级联] {title[:30]}  失败: l1_not_clicked")
+            _emit(f"  ✗ [级联] {title[:30]}  失败: l1_not_clicked")
             return
 
         if l2_label:
             l2_result = wait_click(1, l2_label)
             if not l2_result.get("ok"):
-                print(f"  ✗ [级联] {title[:30]}  失败: l2_not_clicked")
-                print(f"        target=({l1_label}, {l2_label})")
+                _emit(f"  ✗ [级联] {title[:30]}  失败: l2_not_clicked")
+                _emit(f"        target=({l1_label}, {l2_label})")
                 return
 
         time.sleep(0.35)
@@ -641,11 +642,11 @@ def fill_cascader(driver, item, rng):
 
         if ok:
             label = f"{l1_label} > {l2_label}" if l2_label else l1_label
-            print(f"  ✓ [级联] {item['title'][:35]} → {label}")
+            _emit(f"  ✓ [级联] {item['title'][:35]} → {label}")
             close_open_popups(driver)
         else:
-            print(f"  ✗ [级联] {item['title'][:30]}  失败: value_not_changed")
-            print(f"        old={old_value!r}  new={new_value!r}  target=({l1_label}, {l2_label or '—'})")
+            _emit(f"  ✗ [级联] {item['title'][:30]}  失败: value_not_changed")
+            _emit(f"        old={old_value!r}  new={new_value!r}  target=({l1_label}, {l2_label or '—'})")
             if DEBUG:
                 debug_info = exec_js(driver, """
                     var all = document.querySelectorAll('[class*="cascader"], .el-popper, [class*="popper"], [class*="dropdown"]');
@@ -663,14 +664,14 @@ def fill_cascader(driver, item, rng):
                     }
                     return JSON.stringify(info, null, 2);
                 """)
-                print(f"        DOM 探测:\n{debug_info}")
+                _emit(f"        DOM 探测:\n{debug_info}")
 
     except TimeoutException:
-        print(f"  ✗ [级联] {item['title'][:30]}  超时: target=({l1_label}, {l2_label or '—'})")
+        _emit(f"  ✗ [级联] {item['title'][:30]}  超时: target=({l1_label}, {l2_label or '—'})")
         if DEBUG:
             debug_screenshot(driver, f"cascader_timeout_{form_item_id}")
     except Exception as e:
-        print(f"  ✗ [级联] {item['title'][:30]}  异常: {e}")
+        _emit(f"  ✗ [级联] {item['title'][:30]}  异常: {e}")
 
 
 # ============================================================
@@ -792,18 +793,18 @@ def fill_matrix_scale(driver, item, rng):
     try:
         result_str = exec_js(driver, "return " + js_code.strip())
         if not result_str:
-            print(f"  ✗ [矩阵] {item['title'][:30]}  JS 返回空")
+            _emit(f"  ✗ [矩阵] {item['title'][:30]}  JS 返回空")
             return
 
         results = json.loads(result_str)
         ok_count = sum(1 for r in results if r.get("ok"))
-        print(f"  ✓ [矩阵] {item['title'][:35]}  ({ok_count}/{len(rows)} 行有效, 分值={score})")
+        _emit(f"  ✓ [矩阵] {item['title'][:35]}  ({ok_count}/{len(rows)} 行有效, 分值={score})")
         if DEBUG:
             for r in results:
                 status = "✓" if r.get("ok") else f"✗ ({r.get('error','?')})"
-                print(f"    {status} {r['row'][:50]}")
+                _emit(f"    {status} {r['row'][:50]}")
     except Exception as e:
-        print(f"  ✗ [矩阵] {item['title'][:30]}  异常: {e}")
+        _emit(f"  ✗ [矩阵] {item['title'][:30]}  异常: {e}")
 
 
 def fill_province_city(driver, item):
@@ -868,7 +869,7 @@ def fill_province_city(driver, item):
         """, item["formItemId"], item["title"])
 
         if not target_input:
-            print(f"  ✗ [省市] 未找到输入框")
+            _emit(f"  ✗ [省市] 未找到输入框")
             return
 
         scroll_to(driver, target_input)
@@ -967,12 +968,12 @@ def fill_province_city(driver, item):
         new_value = target_input.get_attribute("value") or ""
 
         if new_value and new_value != old_value:
-            print(f"  ✓ [省市] {item['title'][:35]} → {new_value}")
+            _emit(f"  ✓ [省市] {item['title'][:35]} → {new_value}")
             close_open_popups(driver)
         else:
-            print(f"  ⚠ [省市] 已点击但未验证到输入值: {' / '.join(p for p in picked_parts if p)}")
+            _emit(f"  ⚠ [省市] 已点击但未验证到输入值: {' / '.join(p for p in picked_parts if p)}")
     except Exception as e:
-        print(f"  ✗ [省市] 错误: {e}")
+        _emit(f"  ✗ [省市] 错误: {e}")
 
 
 # ============================================================
@@ -987,7 +988,7 @@ def fill_all(driver, survey, rng, auto_submit=False):
         t = item["type"]
 
         if t == "DESC_TEXT":
-            print(f"  — [说明] 跳过")
+            _emit(f"  — [说明] 跳过")
             continue
 
         if t == "RADIO":
@@ -1001,16 +1002,16 @@ def fill_all(driver, survey, rng, auto_submit=False):
         elif t == "PROVINCE_CITY":
             fill_province_city(driver, item)
         else:
-            print(f"  ? [未知题型] {t}: {item['title'][:30]}")
+            _emit(f"  ? [未知题型] {t}: {item['title'][:30]}")
 
         done += 1
         time.sleep(rng.uniform(0.12, 0.35))
 
-    print(f"\n{'='*50}")
-    print(f"填写完成: {done}/{total} 道题已处理")
+    _emit(f"\n{'='*50}")
+    _emit(f"填写完成: {done}/{total} 道题已处理")
 
     if auto_submit:
-        print("查找提交按钮...")
+        _emit("查找提交按钮...")
         time.sleep(2)
         try:
             btns = driver.find_elements(By.XPATH,
@@ -1018,11 +1019,11 @@ def fill_all(driver, survey, rng, auto_submit=False):
             if btns:
                 scroll_to(driver, btns[0])
                 btns[0].click()
-                print("✅ 已点击提交")
+                _emit("✅ 已点击提交")
                 time.sleep(3)
             else:
-                print("⚠ 未找到提交按钮，请手动提交")
+                _emit("⚠ 未找到提交按钮，请手动提交")
         except Exception as e:
-            print(f"⚠ 提交失败: {e}")
+            _emit(f"⚠ 提交失败: {e}")
     else:
-        print("（未开启自动提交，请手动检查后点击提交）")
+        _emit("（未开启自动提交，请手动检查后点击提交）")

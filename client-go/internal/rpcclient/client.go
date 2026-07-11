@@ -126,6 +126,7 @@ func (c *Client) URL() string {
 
 func (c *Client) StartRun(options StartOptions) (StartResponse, error) {
 	params := map[string]interface{}{
+		"name": options.Name, "description": options.Description,
 		"threads": options.Threads, "loops": options.Loops,
 		"source_id": options.SourceID, "headless": options.Headless,
 		"auto_submit": options.AutoSubmit, "debug": options.Debug,
@@ -136,6 +137,57 @@ func (c *Client) StartRun(options StartOptions) (StartResponse, error) {
 	}
 	var response StartResponse
 	return response, c.call("start_run", params, &response)
+}
+
+func (c *Client) ListRunsPage(limit int, cursor string) (RunPage, error) {
+	query := map[string]interface{}{"limit": limit}
+	if cursor != "" {
+		query["cursor"] = cursor
+	}
+	var raw map[string]interface{}
+	if err := c.call("list_runs", query, &raw); err != nil {
+		return RunPage{}, err
+	}
+	var page RunPage
+	return page, decode(raw, &page)
+}
+
+func (c *Client) GetRunLogs(runID string, afterLogID int64, limit int) (RunLogPage, error) {
+	query := map[string]interface{}{"run_id": runID, "after_log_id": afterLogID, "limit": limit}
+	var raw map[string]interface{}
+	if err := c.call("get_run_logs", query, &raw); err != nil {
+		return RunLogPage{}, err
+	}
+	var page RunLogPage
+	if err := decode(raw, &page); err != nil {
+		return page, err
+	}
+	if page.OK != nil && !*page.OK {
+		return page, errors.New(valueOr(page.Error, "查询运行日志失败"))
+	}
+	return page, nil
+}
+
+func (c *Client) GetTaskLogs(runID string, afterLogID int64, limit int, taskID, attempt *int) (TaskLogPage, error) {
+	query := map[string]interface{}{"run_id": runID, "after_log_id": afterLogID, "limit": limit}
+	if taskID != nil {
+		query["task_id"] = *taskID
+	}
+	if attempt != nil {
+		query["attempt"] = *attempt
+	}
+	var raw map[string]interface{}
+	if err := c.call("get_task_logs", query, &raw); err != nil {
+		return TaskLogPage{}, err
+	}
+	var page TaskLogPage
+	if err := decode(raw, &page); err != nil {
+		return page, err
+	}
+	if page.OK != nil && !*page.OK {
+		return page, errors.New(valueOr(page.Error, "查询任务日志失败"))
+	}
+	return page, nil
 }
 
 func (c *Client) GetRun(runID string) (RunRecord, error) {
@@ -195,13 +247,18 @@ func valueOr(value *string, fallback string) string {
 }
 
 func decodeRecord(raw map[string]interface{}) (RunRecord, error) {
+	var record RunRecord
+	err := decode(raw, &record)
+	return record, err
+}
+
+func decode(raw interface{}, target interface{}) error {
 	encoded, err := json.Marshal(raw)
 	if err != nil {
-		return RunRecord{}, fmt.Errorf("编码运行记录失败: %w", err)
+		return fmt.Errorf("编码 RPC 响应失败: %w", err)
 	}
-	var record RunRecord
-	if err := json.Unmarshal(encoded, &record); err != nil {
-		return RunRecord{}, fmt.Errorf("解析运行记录失败: %w", err)
+	if err := json.Unmarshal(encoded, target); err != nil {
+		return fmt.Errorf("解析 RPC 响应失败: %w", err)
 	}
-	return record, nil
+	return nil
 }
