@@ -1,5 +1,6 @@
 import contextvars
 import re
+import sys
 import threading
 
 
@@ -15,6 +16,20 @@ def sanitize_text(value):
     return _SENSITIVE_PATTERN.sub(lambda match: "{}=<redacted>".format(match.group(1)), str(value))
 
 
+def safe_console_print(*values, **kwargs):
+    try:
+        print(*values, **kwargs)
+    except UnicodeEncodeError:
+        stream = kwargs.get("file") or sys.stdout
+        encoding = getattr(stream, "encoding", None) or "ascii"
+        separator = kwargs.get("sep", " ")
+        end = kwargs.get("end", "\n")
+        text = separator.join(str(value) for value in values) + end
+        stream.write(text.encode(encoding, errors="backslashreplace").decode(encoding))
+        if kwargs.get("flush"):
+            stream.flush()
+
+
 class EventLogger:
     def __init__(self, store=None, run_id=None, console=True):
         self.store = store
@@ -25,7 +40,7 @@ class EventLogger:
         message = sanitize_text(message)
         error = sanitize_text(error)
         if self.console:
-            print(message)
+            safe_console_print(message)
         if self.store is not None and self.run_id is not None:
             self.store.append_run_log(
                 self.run_id,
@@ -50,7 +65,7 @@ class EventLogger:
         message = sanitize_text(message)
         error = sanitize_text(error)
         if self.console:
-            print(message)
+            safe_console_print(message)
         if self.store is not None and self.run_id is not None:
             self.store.append_task_log(
                 self.run_id,
@@ -84,7 +99,7 @@ def emit_task_output(*values, **kwargs):
     message = separator.join(str(value) for value in values) + ("" if end == "\n" else end)
     context = _CURRENT_TASK_CONTEXT.get()
     if context is None:
-        print(*values, **kwargs)
+        safe_console_print(*values, **kwargs)
         return
     logger, task, worker = context
     logger.task(task, "filler.output", message, worker=worker, component="filler")

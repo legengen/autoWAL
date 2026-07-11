@@ -1,7 +1,10 @@
+import io
 import os
+import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from autowal.control import FillTask
 from autowal.events import EventLogger, bind_task_logger, emit_task_output, reset_task_logger, sanitize_text
@@ -9,6 +12,18 @@ from autowal.storage import RunStore
 
 
 class EventLoggerTests(unittest.TestCase):
+    def test_console_output_survives_non_utf8_windows_encoding(self):
+        output = io.BytesIO()
+        stream = io.TextIOWrapper(output, encoding="cp1252", write_through=True)
+        with patch.object(sys, "stdout", stream):
+            EventLogger().run("run.event", "任务开始")
+            EventLogger().task(FillTask(1, 1), "task.event", "填写完成")
+            emit_task_output("兼容输出")
+        rendered = output.getvalue().decode("cp1252")
+        self.assertIn(r"\u4efb\u52a1", rendered)
+        self.assertIn(r"\u586b\u5199", rendered)
+        self.assertIn(r"\u517c\u5bb9", rendered)
+
     def test_sanitizes_common_credentials(self):
         text = sanitize_text("password=hunter2 authorization:BearerValue normal=value")
         self.assertNotIn("hunter2", text)
