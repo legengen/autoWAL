@@ -1,13 +1,22 @@
 package rpcclient
 
 import (
+	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
 
 func TestNormalizeURL(t *testing.T) {
 	got, err := NormalizeURL(" 127.0.0.1:8765/ ")
@@ -16,6 +25,55 @@ func TestNormalizeURL(t *testing.T) {
 	}
 	if _, err := NormalizeURL("ftp://example.com"); err == nil {
 		t.Fatal("expected unsupported scheme error")
+	}
+}
+
+func TestTimeoutTransportKeepsContextUntilBodyClose(t *testing.T) {
+	var requestContext context.Context
+	transport := timeoutTransport{
+		timeout: time.Second,
+		base: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+			requestContext = request.Context()
+			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader("ok"))}, nil
+		}),
+	}
+	request, _ := http.NewRequest(http.MethodGet, "http://example.test", nil)
+	response, err := transport.RoundTrip(request)
+	if err != nil {
+		t.Fatalf("RoundTrip() error: %v", err)
+	}
+	select {
+	case <-requestContext.Done():
+		t.Fatal("request context was cancelled before response body was consumed")
+	default:
+	}
+	if err := response.Body.Close(); err != nil {
+		t.Fatalf("Body.Close() error: %v", err)
+	}
+	select {
+	case <-requestContext.Done():
+	default:
+		t.Fatal("request context was not cancelled when response body closed")
+	}
+}
+
+func TestTimeoutTransportCancelsContextOnError(t *testing.T) {
+	var requestContext context.Context
+	transport := timeoutTransport{
+		timeout: time.Second,
+		base: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+			requestContext = request.Context()
+			return nil, errors.New("network error")
+		}),
+	}
+	request, _ := http.NewRequest(http.MethodGet, "http://example.test", nil)
+	if _, err := transport.RoundTrip(request); err == nil {
+		t.Fatal("expected transport error")
+	}
+	select {
+	case <-requestContext.Done():
+	default:
+		t.Fatal("request context was not cancelled after transport error")
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -26,8 +27,24 @@ type timeoutTransport struct {
 
 func (t timeoutTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(req.Context(), t.timeout)
-	defer cancel()
-	return t.base.RoundTrip(req.WithContext(ctx))
+	response, err := t.base.RoundTrip(req.WithContext(ctx))
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	response.Body = &cancelReadCloser{ReadCloser: response.Body, cancel: cancel}
+	return response, nil
+}
+
+type cancelReadCloser struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (c *cancelReadCloser) Close() error {
+	err := c.ReadCloser.Close()
+	c.cancel()
+	return err
 }
 
 type Client struct {
