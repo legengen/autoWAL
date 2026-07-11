@@ -48,6 +48,6 @@
 
 ## 7. Verification and Operations
 
-- [ ] 7.1 Document database location, backup/rollback, SMTP environment variables, at-least-once delivery limitation, log privacy, and interrupted recovery behavior.
-- [ ] 7.2 Run the full Python suite, Go tests, TypeScript production build, real Python-to-Go XML-RPC interoperability test, and Windows Wails package build.
-- [ ] 7.3 Add CI checks that create a fresh database, exercise migration/recovery, run fake-SMTP integration tests, and verify no credentials appear in captured logs or RPC payloads.
+- [x] 7.1 Document database location, backup/rollback, SMTP environment variables, at-least-once delivery limitation, log privacy, and interrupted recovery behavior.
+- [x] 7.2 Run the full Python suite, Go tests, TypeScript production build, real Python-to-Go XML-RPC interoperability test, and Windows Wails package build.
+- [x] 7.3 Add CI checks that create a fresh database, exercise migration/recovery, run fake-SMTP integration tests, and verify no credentials appear in captured logs or RPC payloads.

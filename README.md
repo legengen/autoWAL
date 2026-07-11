@@ -16,6 +16,43 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+## Run 持久化与邮件通知
+
+XML-RPC 服务会把每次完整批次 Run 持久化到 SQLite。默认数据库位于项目根目录的
+`data/autowal.db`；可以通过 `--data-dir` 或 `AUTOWAL_DATA_DIR` 指定绝对数据目录：
+
+```powershell
+python .\rpc_server.py --data-dir D:\autowal-data
+```
+
+数据库包含 `runs`、`run_logs` 和 `task_logs`。服务启动时会把上次异常退出后仍处于
+`pending`、`running` 或 `stopping` 的 Run 标记为 `interrupted`，并为该最终状态排队发送通知。
+日志可能包含问卷运行错误和页面信息，应按业务数据保护数据库及其备份，不要将数据库公开下载。
+
+SMTP 仅从环境变量读取，凭证不会通过 RPC 返回：
+
+```powershell
+$env:AUTOWAL_SMTP_HOST = "smtp.example.com"
+$env:AUTOWAL_SMTP_PORT = "587"
+$env:AUTOWAL_SMTP_TLS = "true"
+$env:AUTOWAL_SMTP_USER = "mailer@example.com"
+$env:AUTOWAL_SMTP_PASSWORD = "<secret>"
+$env:AUTOWAL_SMTP_FROM = "mailer@example.com"
+$env:AUTOWAL_SMTP_TO = "operator@example.com"
+$env:AUTOWAL_SMTP_MAX_ATTEMPTS = "5"
+$env:AUTOWAL_SMTP_RETRY_DELAYS = "60,300,900,1800,3600"
+python .\rpc_server.py
+```
+
+每个 Run 进入 `completed`、`failed`、`stopped` 或 `interrupted` 后只创建一个逻辑通知。
+发送使用确定性的 `Message-ID`，但 SMTP 投递和 SQLite 状态更新无法组成同一事务：如果进程在 SMTP
+接受邮件后、写入 `sent` 前崩溃，重启可能再次投递。因此邮件是至少一次尝试语义，收件端应按
+`Message-ID` 去重。
+
+备份前建议停止 RPC 服务，然后复制整个数据目录；或者使用 SQLite 的在线备份命令。不要在服务运行时
+仅复制 `autowal.db` 而遗漏 `-wal` 文件。恢复时停止服务，用备份的数据目录整体替换当前目录，再启动服务。
+如需回滚到不支持该数据库版本的旧服务，应先保留数据库备份，并使用独立的新数据目录启动旧版本。
+
 如果是在 Linux 服务器：
 
 ```bash

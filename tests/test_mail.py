@@ -109,6 +109,8 @@ class EmailSenderTests(unittest.TestCase):
         self.assertEqual("retry_wait", waiting["email_status"])
         self.assertEqual(40, waiting["email_next_attempt_at"])
         self.assertNotIn("secret-value", waiting["email_last_error"])
+        self.assertNotIn("secret-value", str(self.store.get_run_logs("run-a")))
+        self.assertNotIn("secret-value", str(waiting))
         self.assertEqual(0, sender.process_once(now=39))
 
         FakeSMTP.failures = [RuntimeError("still unavailable")]
