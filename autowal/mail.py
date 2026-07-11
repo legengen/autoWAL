@@ -26,7 +26,7 @@ class MailConfig:
 
     @classmethod
     def from_env(cls, environ=None):
-        environ = environ or os.environ
+        environ = os.environ if environ is None else environ
         required = ("AUTOWAL_SMTP_HOST", "AUTOWAL_SMTP_FROM", "AUTOWAL_SMTP_TO")
         missing = [name for name in required if not environ.get(name)]
         if missing:
