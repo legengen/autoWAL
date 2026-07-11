@@ -36,6 +36,18 @@ func (a *App) ListRuns() ([]rpcclient.RunRecord, error) {
 	return a.rpc.ListRuns()
 }
 
+func (a *App) ListRunsPage(limit int, cursor string) (rpcclient.RunPage, error) {
+	return a.rpc.ListRunsPage(limit, cursor)
+}
+
+func (a *App) GetRunLogs(runID string, afterLogID int64, limit int) (rpcclient.RunLogPage, error) {
+	return a.rpc.GetRunLogs(runID, afterLogID, limit)
+}
+
+func (a *App) GetTaskLogs(runID string, afterLogID int64, limit int, taskID, attempt *int) (rpcclient.TaskLogPage, error) {
+	return a.rpc.GetTaskLogs(runID, afterLogID, limit, taskID, attempt)
+}
+
 func (a *App) StopRun(runID string) (rpcclient.StopResponse, error) {
 	return a.rpc.StopRun(runID)
 }

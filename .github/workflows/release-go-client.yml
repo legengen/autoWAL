@@ -1,4 +1,4 @@
-name: Release Go Client
+name: Release autoWAL
 
 on:
   push:
@@ -10,7 +10,40 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: client-go/go.mod
+          cache-dependency-path: client-go/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: client-go/frontend/package-lock.json
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test Python server
+        run: |
+          python -m unittest discover -s tests -v
+          python -m compileall -q auto_fill.py rpc_server.py autowal
+      - name: Test Go RPC client
+        working-directory: client-go
+        run: go test ./...
+      - name: Build frontend
+        working-directory: client-go/frontend
+        run: |
+          npm ci
+          npm run build
+
   build:
+    needs: test
     strategy:
       fail-fast: false
       matrix:
@@ -71,3 +104,30 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: client-go/build/bin/${{ matrix.artifact }}
+
+  package-server:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package Python server
+        id: package
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#client-v}"
+          version="${version#release/}"
+          package="autoWAL-server-${version}"
+          mkdir "${package}"
+          cp -r autowal "${package}/autowal"
+          find "${package}" -type d -name __pycache__ -prune -exec rm -rf {} +
+          cp rpc_server.py auto_fill.py requirements.txt survey_structured.json survey_raw.json README.md SELECTOR_GUIDE.md "${package}/"
+          zip -r "${package}.zip" "${package}"
+          echo "artifact=${package}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.artifact }}
+          path: ${{ steps.package.outputs.artifact }}.zip
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ steps.package.outputs.artifact }}.zip

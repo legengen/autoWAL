@@ -8,8 +8,9 @@ def main():
     parser = argparse.ArgumentParser(description="autoWAL XML-RPC server")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--data-dir", default=None)
     args = parser.parse_args()
-    serve(args.host, args.port)
+    serve(args.host, args.port, data_dir=args.data_dir)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import { createIcons, Link, ListRestart, Play, RefreshCw, Square, Terminal, Unplug, Wifi } from 'lucide'
-import { api, type RunRecord, type StartOptions } from './api'
+import { api, type RunLog, type RunRecord, type StartOptions, type TaskLog } from './api'
 import './style.css'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -30,6 +30,8 @@ app.innerHTML = `
         <div><span class="eyebrow">新建运行</span><h2>任务参数</h2></div>
       </div>
       <form id="run-form">
+        <label>任务名称<input name="name" maxlength="120" placeholder="例如：发布前全量验证" required /></label>
+        <label>用途说明 <span class="optional">可选</span><textarea name="description" maxlength="1000" rows="2" placeholder="说明本次完整填写流程的用途"></textarea></label>
         <div class="field-pair">
           <label>线程数<input name="threads" type="number" value="1" min="1" step="1" required /></label>
           <label>循环数<input name="loops" type="number" value="1" min="1" step="1" required /></label>
@@ -63,6 +65,7 @@ app.innerHTML = `
           <tbody id="runs-body"><tr class="empty-row"><td colspan="4">连接服务器后显示运行记录</td></tr></tbody>
         </table>
       </div>
+      <button id="load-more" class="button secondary load-more" type="button" hidden>加载更多</button>
 
       <section class="detail-panel" id="detail-panel">
         <div class="detail-empty"><i data-lucide="list-restart"></i><span>选择一条运行记录查看详情</span></div>
@@ -84,6 +87,7 @@ renderIcons()
 const serverInput = byID<HTMLInputElement>('server-url')
 const connectButton = byID<HTMLButtonElement>('connect-button')
 const refreshButton = byID<HTMLButtonElement>('refresh-button')
+const loadMoreButton = byID<HTMLButtonElement>('load-more')
 const startButton = byID<HTMLButtonElement>('start-button')
 const runForm = byID<HTMLFormElement>('run-form')
 const runsBody = byID<HTMLTableSectionElement>('runs-body')
@@ -95,12 +99,22 @@ const connectionLabel = byID<HTMLSpanElement>('connection-label')
 let connected = false
 let selectedRunID: string | null = null
 let runs: RunRecord[] = []
+let nextCursor: string | null = null
+let activeDetailTab: 'overview' | 'run-logs' | 'task-logs' = 'overview'
+let runLogs: RunLog[] = []
+let taskLogs: TaskLog[] = []
+let runLogCursor = 0
+let taskLogCursor = 0
+let taskFilter: number | null = null
+let attemptFilter: number | null = null
+let loadingDetailLogs = false
 let refreshing = false
 let pollTimer: number | null = null
 
 connectButton.addEventListener('click', connect)
 serverInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') void connect() })
 refreshButton.addEventListener('click', () => void refreshRuns(true))
+loadMoreButton.addEventListener('click', () => void loadMoreRuns())
 runForm.addEventListener('submit', startRun)
 byID<HTMLButtonElement>('clear-log').addEventListener('click', () => { logLines.innerHTML = '' })
 
@@ -133,6 +147,8 @@ async function startRun(event: SubmitEvent) {
   const data = new FormData(runForm)
   const seedText = String(data.get('seed') ?? '').trim()
   const options: StartOptions = {
+    name: String(data.get('name') ?? '').trim(),
+    description: String(data.get('description') ?? '').trim(),
     threads: Number(data.get('threads')),
     loops: Number(data.get('loops')),
     source_id: String(data.get('source_id')),
@@ -163,9 +179,13 @@ async function refreshRuns(notify = false) {
   refreshing = true
   refreshButton.classList.add('spinning')
   try {
-    runs = await api.ListRuns()
+    const page = await api.ListRunsPage(100, '')
+    runs = page.items
+    nextCursor = page.next_cursor
+    loadMoreButton.hidden = !nextCursor
     renderRuns()
     renderDetail()
+    if (activeDetailTab !== 'overview') void loadSelectedLogs(false)
     if (notify) toast('运行记录已刷新', 'success')
   } catch (error) {
     markDisconnected()
@@ -173,6 +193,22 @@ async function refreshRuns(notify = false) {
   } finally {
     refreshing = false
     refreshButton.classList.remove('spinning')
+  }
+}
+
+async function loadMoreRuns() {
+  if (!nextCursor) return
+  setBusy(loadMoreButton, true)
+  try {
+    const page = await api.ListRunsPage(100, nextCursor)
+    runs.push(...page.items)
+    nextCursor = page.next_cursor
+    loadMoreButton.hidden = !nextCursor
+    renderRuns()
+  } catch (error) {
+    reportError('加载历史失败', error)
+  } finally {
+    setBusy(loadMoreButton, false)
   }
 }
 
@@ -185,7 +221,7 @@ function renderRuns() {
     const progress = run.summary ? `${run.summary.completed}/${run.summary.total}` : run.status === 'running' ? '执行中' : '—'
     const state = safeStatus(run.status)
     return `<tr data-run-id="${escapeHTML(run.run_id)}" class="${run.run_id === selectedRunID ? 'selected' : ''}">
-      <td><strong class="run-id">${escapeHTML(shortID(run.run_id))}</strong><small>${formatDate(run.created_at)}</small></td>
+      <td><strong class="run-name">${escapeHTML(run.name)}</strong><small>${escapeHTML(run.run_number)} · ${formatDate(run.created_at)}</small></td>
       <td><span class="status ${state.className}"><span></span>${state.label}</span></td>
       <td>${progress}</td><td>${formatDuration(run)}</td>
     </tr>`
@@ -193,6 +229,8 @@ function renderRuns() {
   runsBody.querySelectorAll<HTMLTableRowElement>('tr[data-run-id]').forEach((row) => {
     row.addEventListener('click', () => {
       selectedRunID = row.dataset.runId ?? null
+      activeDetailTab = 'overview'
+      runLogs = []; taskLogs = []; runLogCursor = 0; taskLogCursor = 0
       renderRuns()
       renderDetail()
     })
@@ -210,9 +248,38 @@ function renderDetail() {
   const canStop = ['pending', 'running', 'stopping'].includes(run.status)
   const state = safeStatus(run.status)
   detailPanel.innerHTML = `
-    <div class="detail-header"><div><span class="status ${state.className}"><span></span>${state.label}</span><h3>${escapeHTML(run.run_id)}</h3></div>
+    <div class="detail-header"><div><span class="status ${state.className}"><span></span>${state.label}</span><h3>${escapeHTML(run.name)}</h3><p class="run-meta">${escapeHTML(run.run_number)} · ${escapeHTML(run.description || '无用途说明')}</p></div>
       ${canStop ? '<button id="stop-button" class="button danger"><i data-lucide="square"></i><span>停止任务</span></button>' : ''}
     </div>
+    <div class="detail-tabs" role="tablist">
+      <button data-tab="overview" class="${activeDetailTab === 'overview' ? 'active' : ''}">概览</button>
+      <button data-tab="run-logs" class="${activeDetailTab === 'run-logs' ? 'active' : ''}">Run 日志</button>
+      <button data-tab="task-logs" class="${activeDetailTab === 'task-logs' ? 'active' : ''}">任务日志</button>
+    </div>
+    <div id="detail-tab-content">${renderTabContent(run)}</div>
+  `
+  renderIcons()
+  detailPanel.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((button) => button.addEventListener('click', () => {
+    activeDetailTab = button.dataset.tab as typeof activeDetailTab
+    renderDetail()
+    if (activeDetailTab !== 'overview') void loadSelectedLogs(false)
+  }))
+  document.querySelector<HTMLButtonElement>('#stop-button')?.addEventListener('click', () => void stopRun(run.run_id))
+  document.querySelector<HTMLButtonElement>('#refresh-detail-logs')?.addEventListener('click', () => void loadSelectedLogs(true))
+  document.querySelector<HTMLInputElement>('#task-filter')?.addEventListener('change', (event) => { taskFilter = inputNumber(event); void loadSelectedLogs(true) })
+  document.querySelector<HTMLInputElement>('#attempt-filter')?.addEventListener('change', (event) => { attemptFilter = inputNumber(event); void loadSelectedLogs(true) })
+}
+
+function renderTabContent(run: RunRecord) {
+  if (activeDetailTab !== 'overview') {
+    const logs = activeDetailTab === 'run-logs' ? runLogs : taskLogs
+    return `<div class="detail-log-toolbar">
+      ${activeDetailTab === 'task-logs' ? `<input id="task-filter" type="number" min="1" value="${taskFilter ?? ''}" placeholder="任务 ID"><input id="attempt-filter" type="number" min="1" value="${attemptFilter ?? ''}" placeholder="尝试次数">` : ''}
+      <button id="refresh-detail-logs" class="button secondary" type="button">刷新日志</button>
+    </div><div class="detail-logs">${logs.length ? logs.map(renderPersistedLog).join('') : '<div class="logs-empty">暂无日志</div>'}</div>`
+  }
+  const summary = run.summary
+  return `
     <div class="metrics">
       <div><span>成功</span><strong>${summary?.succeeded ?? '—'}</strong></div>
       <div><span>失败</span><strong>${summary?.failed ?? '—'}</strong></div>
@@ -227,11 +294,40 @@ function renderDetail() {
       <div><dt>随机种子</dt><dd>${run.options.seed ?? '未设置'}</dd></div>
       <div><dt>运行模式</dt><dd>${[run.options.headless && '无头', run.options.auto_submit && '自动提交', run.options.debug && '调试'].filter(Boolean).join(' · ') || '标准'}</dd></div>
     </dl>
+    <dl class="options-list email-detail">
+      <div><dt>邮件状态</dt><dd>${escapeHTML(emailStatus(run.email_status))}</dd></div>
+      <div><dt>发送次数</dt><dd>${run.email_attempts}</dd></div>
+      <div><dt>发送时间</dt><dd>${run.email_sent_at ? formatDate(run.email_sent_at) : '—'}</dd></div>
+    </dl>
+    ${run.email_last_error ? `<div class="error-message">邮件发送失败：${escapeHTML(run.email_last_error)}</div>` : ''}
     ${run.error ? `<div class="error-message">${escapeHTML(run.error)}</div>` : ''}
   `
-  renderIcons()
-  document.querySelector<HTMLButtonElement>('#stop-button')?.addEventListener('click', () => void stopRun(run.run_id))
 }
+
+function renderPersistedLog(log: RunLog | TaskLog) {
+  const task = 'task_id' in log ? `<b>#${log.task_id} / ${log.attempt}</b>` : ''
+  return `<div class="persisted-log"><time>${formatDate(log.timestamp)}</time>${task}<span class="log-level">${escapeHTML(log.level)}</span><code>${escapeHTML(log.event_type)}</code><span>${escapeHTML(log.message)}</span>${log.error ? `<em>${escapeHTML(log.error)}</em>` : ''}</div>`
+}
+
+async function loadSelectedLogs(reset: boolean) {
+  if (!selectedRunID || loadingDetailLogs) return
+  loadingDetailLogs = true
+  try {
+    if (activeDetailTab === 'run-logs') {
+      if (reset) { runLogs = []; runLogCursor = 0 }
+      const page = await api.GetRunLogs(selectedRunID, runLogCursor, 200)
+      runLogs.push(...page.items); runLogCursor = page.next_after_log_id ?? runLogCursor
+    } else if (activeDetailTab === 'task-logs') {
+      if (reset) { taskLogs = []; taskLogCursor = 0 }
+      const page = await api.GetTaskLogs(selectedRunID, taskLogCursor, 200, taskFilter, attemptFilter)
+      taskLogs.push(...page.items); taskLogCursor = page.next_after_log_id ?? taskLogCursor
+    }
+    renderDetail()
+  } catch (error) { reportError('加载日志失败', error) } finally { loadingDetailLogs = false }
+}
+
+function inputNumber(event: Event) { const value = (event.target as HTMLInputElement).value; return value ? Number(value) : null }
+function emailStatus(status: string) { return ({ none: '未进入终态', pending: '等待发送', sending: '发送中', retry_wait: '等待重试', sent: '已发送', failed: '发送失败' } as Record<string, string>)[status] ?? status }
 
 async function stopRun(runID: string) {
   const button = document.querySelector<HTMLButtonElement>('#stop-button')
@@ -311,6 +407,7 @@ function safeStatus(status: string) {
     failed: { className: 'failed', label: '失败' },
     stopping: { className: 'stopping', label: '停止中' },
     stopped: { className: 'stopped', label: '已停止' },
+    interrupted: { className: 'failed', label: '服务重启中断' },
   }
   return states[status] ?? { className: 'unknown', label: '未知状态' }
 }

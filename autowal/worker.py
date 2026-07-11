@@ -11,6 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from .browser import init_driver
 from .config import build_survey_url
 from .control import FillTask, TaskResult
+from .events import EventLogger, bind_task_logger, emit_task_output as _emit, reset_task_logger
 from .filler import debug_screenshot, fill_all
 
 
@@ -20,22 +21,25 @@ def run_once(survey, args, rng, task: FillTask):
     success = False
     error = None
     survey_url = build_survey_url(args.source_id)
+    events = getattr(args, "event_logger", None) or EventLogger()
+    context_token = bind_task_logger(events, task)
+    events.task(task, "task.started", "{} 开始".format(task.label), component="worker")
 
     try:
         driver = init_driver(headless=args.headless)
-        print(f"\n{'='*50}")
-        print(task.label)
-        print(f"打开页面: {survey_url}")
+        _emit(f"\n{'='*50}")
+        _emit(task.label)
+        _emit(f"打开页面: {survey_url}")
         driver.get(survey_url)
 
-        print("等待渲染...")
+        _emit("等待渲染...")
         WebDriverWait(driver, 60).until(
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, ".el-form-item, .el-radio, .el-checkbox, .el-cascader, .form-item-component, [class*='form-item']")
             )
         )
         time.sleep(2)
-        print("就绪，开始填写\n")
+        _emit("就绪，开始填写\n")
 
         if args.debug:
             debug_screenshot(driver, "page_loaded")
@@ -43,27 +47,27 @@ def run_once(survey, args, rng, task: FillTask):
         fill_all(driver, survey, rng, auto_submit=args.auto_submit)
 
         if args.interactive:
-            print("\n按 Enter 关闭浏览器...")
+            _emit("\n按 Enter 关闭浏览器...")
             try:
                 input()
             except EOFError:
-                print("(非交互模式，自动关闭)")
+                _emit("(非交互模式，自动关闭)")
                 time.sleep(3)
 
         success = True
     except TimeoutException:
-        print("[警告] 加载超时，强制尝试...")
+        _emit("[警告] 加载超时，强制尝试...")
         try:
             fill_all(driver, survey, rng, auto_submit=False)
             time.sleep(3)
             success = True
         except Exception as exc:
             error = f"{type(exc).__name__}: {exc}"
-            print(f"[错误] 超时后的填写尝试失败: {error}")
+            _emit(f"[错误] 超时后的填写尝试失败: {error}")
             traceback.print_exc()
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
-        print(f"[错误] 异常: {error}")
+        _emit(f"[错误] 异常: {error}")
         traceback.print_exc()
         time.sleep(3)
     finally:
@@ -74,8 +78,9 @@ def run_once(survey, args, rng, task: FillTask):
                 if success:
                     success = False
                     error = f"driver quit failed: {exc}"
-                print(f"[警告] 关闭浏览器失败: {exc}")
-        print(f"{task.label} 已关闭浏览器")
+                _emit(f"[警告] 关闭浏览器失败: {exc}")
+        _emit(f"{task.label} 已关闭浏览器")
+        reset_task_logger(context_token)
 
     return TaskResult(
         task=task,
