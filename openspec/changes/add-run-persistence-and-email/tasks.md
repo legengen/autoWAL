@@ -32,11 +32,11 @@
 
 ## 5. Final Email Notification
 
-- [ ] 5.1 Add SMTP environment configuration parsing and validation for host, port, TLS, user/password, sender, recipient, retry count, and retry delays without exposing credentials.
-- [ ] 5.2 Extend final Run transitions to atomically create one pending logical notification, deterministic Message-ID, and `email.queued` lifecycle event.
-- [ ] 5.3 Implement the asynchronous mail sender claim/send/result loop using writer commands for `sending`, `sent`, `retry_wait`, and `failed` states.
-- [ ] 5.4 Compose sanitized text email subjects and bodies containing Run identity, metadata, final state, options, summary, timestamps, duration, and error.
-- [ ] 5.5 Add fake-SMTP tests for success, temporary retry, permanent failure, retry exhaustion, restart recovery, duplicate-finalization suppression, and no internal-task email.
+- [x] 5.1 Add SMTP environment configuration parsing and validation for host, port, TLS, user/password, sender, recipient, retry count, and retry delays without exposing credentials.
+- [x] 5.2 Extend final Run transitions to atomically create one pending logical notification, deterministic Message-ID, and `email.queued` lifecycle event.
+- [x] 5.3 Implement the asynchronous mail sender claim/send/result loop using writer commands for `sending`, `sent`, `retry_wait`, and `failed` states.
+- [x] 5.4 Compose sanitized text email subjects and bodies containing Run identity, metadata, final state, options, summary, timestamps, duration, and error.
+- [x] 5.5 Add fake-SMTP tests for success, temporary retry, permanent failure, retry exhaustion, restart recovery, duplicate-finalization suppression, and no internal-task email.
 
 ## 6. XML-RPC and Go Client
 

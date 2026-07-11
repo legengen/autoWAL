@@ -38,6 +38,7 @@ class RpcServiceTests(unittest.TestCase):
             survey_loader=lambda _path: [],
             control_plane_factory=FakeControlPlane,
             store=self.store,
+            start_mailer=False,
         )
 
     def tearDown(self):

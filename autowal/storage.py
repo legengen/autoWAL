@@ -146,6 +146,42 @@ class RunStore:
             wait=True,
         )
 
+    def claim_email(self, run_id, claimed_at=None):
+        return self._submit(
+            "claim_email",
+            {"run_id": run_id, "claimed_at": claimed_at if claimed_at is not None else time.time()},
+            wait=True,
+        )
+
+    def complete_email(self, run_id, success, error=None, retry_at=None, completed_at=None):
+        return self._submit(
+            "complete_email",
+            {
+                "run_id": run_id,
+                "success": bool(success),
+                "error": error,
+                "retry_at": retry_at,
+                "completed_at": completed_at if completed_at is not None else time.time(),
+            },
+            wait=True,
+        )
+
+    def get_due_email_runs(self, now=None, limit=20):
+        limit = self._validate_limit(limit)
+        now = now if now is not None else time.time()
+        with closing(self._read_connection()) as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM runs
+                WHERE status IN ('completed', 'failed', 'stopped', 'interrupted')
+                  AND (email_status = 'pending'
+                       OR (email_status = 'retry_wait' AND email_next_attempt_at <= ?))
+                ORDER BY finished_at ASC, run_id ASC LIMIT ?
+                """,
+                (now, limit),
+            ).fetchall()
+        return [self._decode_run(row) for row in rows]
+
     def close(self):
         if self._closed:
             return
@@ -290,6 +326,10 @@ class RunStore:
             return self._transition_run(connection, command.payload)
         if command.kind == "recover_interrupted_runs":
             return self._recover_interrupted_runs(connection, command.payload["recovered_at"])
+        if command.kind == "claim_email":
+            return self._claim_email(connection, command.payload)
+        if command.kind == "complete_email":
+            return self._complete_email(connection, command.payload)
         if command.kind in ("barrier", "shutdown"):
             with self._error_lock:
                 async_error = self._async_error
@@ -341,8 +381,17 @@ class RunStore:
             ).fetchall()
             for row in rows:
                 connection.execute(
-                    "UPDATE runs SET status = 'interrupted', finished_at = ?, final_error = ? WHERE run_id = ?",
-                    (recovered_at, "server restarted before Run completed", row["run_id"]),
+                    """
+                    UPDATE runs SET status = 'interrupted', finished_at = ?, final_error = ?,
+                        email_status = 'pending', email_message_id = ?
+                    WHERE run_id = ?
+                    """,
+                    (
+                        recovered_at,
+                        "server restarted before Run completed",
+                        self._message_id(row["run_id"]),
+                        row["run_id"],
+                    ),
                 )
                 self._insert_run_log(
                     connection,
@@ -356,8 +405,104 @@ class RunStore:
                         "error": "previous status: {}".format(row["status"]),
                     },
                 )
+                self._insert_run_log(
+                    connection,
+                    {
+                        "run_id": row["run_id"],
+                        "timestamp": recovered_at,
+                        "level": "INFO",
+                        "component": "mail",
+                        "event_type": "email.queued",
+                        "message": "Final Run email queued after recovery",
+                        "error": None,
+                    },
+                )
                 recovered.append(row["run_id"])
+            stale = connection.execute(
+                "SELECT run_id FROM runs WHERE email_status = 'sending'"
+            ).fetchall()
+            for row in stale:
+                connection.execute(
+                    "UPDATE runs SET email_status = 'retry_wait', email_next_attempt_at = ? WHERE run_id = ?",
+                    (recovered_at, row["run_id"]),
+                )
+                self._insert_run_log(
+                    connection,
+                    {
+                        "run_id": row["run_id"],
+                        "timestamp": recovered_at,
+                        "level": "WARNING",
+                        "component": "mail",
+                        "event_type": "email.retry_scheduled",
+                        "message": "Stale sending email scheduled for retry",
+                        "error": None,
+                    },
+                )
         return recovered
+
+    def _claim_email(self, connection, payload):
+        with connection:
+            cursor = connection.execute(
+                """
+                UPDATE runs SET email_status = 'sending', email_attempts = email_attempts + 1,
+                    email_next_attempt_at = NULL
+                WHERE run_id = ? AND email_status IN ('pending', 'retry_wait')
+                """,
+                (payload["run_id"],),
+            )
+            if cursor.rowcount != 1:
+                return None
+            self._insert_run_log(
+                connection,
+                {
+                    "run_id": payload["run_id"],
+                    "timestamp": payload["claimed_at"],
+                    "level": "INFO",
+                    "component": "mail",
+                    "event_type": "email.sending",
+                    "message": "Sending final Run email",
+                    "error": None,
+                },
+            )
+        return self.get_run(payload["run_id"])
+
+    def _complete_email(self, connection, payload):
+        event_type = "email.sent" if payload["success"] else "email.failed"
+        status = "sent" if payload["success"] else ("retry_wait" if payload["retry_at"] is not None else "failed")
+        with connection:
+            cursor = connection.execute(
+                """
+                UPDATE runs SET email_status = ?, email_last_error = ?,
+                    email_next_attempt_at = ?, email_sent_at = ?
+                WHERE run_id = ? AND email_status = 'sending'
+                """,
+                (
+                    status,
+                    payload["error"],
+                    payload["retry_at"],
+                    payload["completed_at"] if payload["success"] else None,
+                    payload["run_id"],
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise TransitionConflict("email state changed before result could commit")
+            self._insert_run_log(
+                connection,
+                {
+                    "run_id": payload["run_id"],
+                    "timestamp": payload["completed_at"],
+                    "level": "INFO" if payload["success"] else "ERROR",
+                    "component": "mail",
+                    "event_type": event_type,
+                    "message": "Final Run email sent" if payload["success"] else "Final Run email delivery failed",
+                    "error": payload["error"],
+                },
+            )
+        return self.get_run(payload["run_id"])
+
+    @staticmethod
+    def _message_id(run_id):
+        return "<run-{}@autowal.local>".format(run_id)
 
     @staticmethod
     def _next_run_number(connection, created_at):
@@ -389,6 +534,10 @@ class RunStore:
         for name, value in updates.items():
             assignments.append("{} = ?".format(name))
             values.append(value)
+        queues_email = payload["new_status"] in FINAL_STATUSES
+        if queues_email:
+            assignments.extend(("email_status = 'pending'", "email_message_id = ?"))
+            values.append(self._message_id(payload["run_id"]))
         placeholders = ",".join("?" for _ in expected)
         values.extend((payload["run_id"],) + expected)
         with connection:
@@ -403,6 +552,19 @@ class RunStore:
             event = dict(payload["event"])
             event["run_id"] = payload["run_id"]
             self._insert_run_log(connection, event)
+            if queues_email:
+                self._insert_run_log(
+                    connection,
+                    {
+                        "run_id": payload["run_id"],
+                        "timestamp": event["timestamp"],
+                        "level": "INFO",
+                        "component": "mail",
+                        "event_type": "email.queued",
+                        "message": "Final Run email queued",
+                        "error": None,
+                    },
+                )
         return self.get_run(payload["run_id"])
 
     def _execute_log_batch(self, connection, commands):

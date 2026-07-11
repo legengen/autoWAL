@@ -8,6 +8,7 @@ from socketserver import ThreadingMixIn
 
 from .config import DEFAULT_SOURCE_ID, SURVEY_JSON, resolve_data_dir, validate_source_id
 from .events import EventLogger
+from .mail import EmailSender
 from .scheduler import ControlPlane
 from .storage import ACTIVE_STATUSES, FINAL_STATUSES, RunStore, TransitionConflict
 from .survey import load_survey
@@ -32,7 +33,7 @@ class ThreadingXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
 
 
 class RpcService:
-    def __init__(self, survey_loader=load_survey, control_plane_factory=ControlPlane, store=None, data_dir=None):
+    def __init__(self, survey_loader=load_survey, control_plane_factory=ControlPlane, store=None, data_dir=None, start_mailer=True, mail_sender=None):
         self._survey_loader = survey_loader
         self._control_plane_factory = control_plane_factory
         self._store = store or RunStore(os.path.join(resolve_data_dir(data_dir), "autowal.db"))
@@ -40,6 +41,9 @@ class RpcService:
         self._planes = {}
         self._lock = threading.Lock()
         self._store.recover_interrupted_runs()
+        self._mail_sender = mail_sender or EmailSender(self._store)
+        if start_mailer:
+            self._mail_sender.start()
 
     def ping(self):
         return {"ok": True, "service": "autoWAL"}
@@ -167,6 +171,7 @@ class RpcService:
                 self._planes.pop(run_id, None)
 
     def close(self):
+        self._mail_sender.close()
         if self._owns_store:
             self._store.close()
 
