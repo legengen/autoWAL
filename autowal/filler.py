@@ -683,6 +683,7 @@ MATRIX_JS = r"""
     var ROWS = <<ROWS>>;
     var SCORE = <<SCORE>>;
     var results = [];
+    var usedRows = [];
 
     // 找矩阵容器
     var matrix = document.querySelector('[formitemid="' + FORM_ITEM_ID + '"]');
@@ -705,70 +706,147 @@ MATRIX_JS = r"""
                rect.height > 0;
     }
 
-    function findRow(needle) {
-        var compactNeedle = norm(needle);
-        var shortNeedle = compactNeedle.slice(0, Math.min(10, compactNeedle.length));
-        var candidates = matrix.querySelectorAll(
-            '.tr:not(.t-header), tr, .el-table__row, [class*="matrix-row"], [class*="table-row"]'
-        );
-        for (var c = 0; c < candidates.length; c++) {
-            var text = norm(candidates[c].textContent);
-            if (text.indexOf(compactNeedle) >= 0 || text.indexOf(shortNeedle) >= 0) {
-                return candidates[c];
-            }
-        }
+    var SCORE_SELECTORS = [
+        '.el-rate__item',
+        '.el-rate__icon',
+        '[class*="rate"] i',
+        '[class*="rate"] svg',
+        '[class*="star"]'
+    ];
 
-        // 有些评分表把行名拆在多个内部元素里，先找到文本节点所在元素再回溯到行。
-        var all = matrix.querySelectorAll('*');
-        for (var i = 0; i < all.length; i++) {
-            var t = norm(all[i].textContent);
-            if (t.indexOf(compactNeedle) >= 0 || t.indexOf(shortNeedle) >= 0) {
-                return all[i].closest('.tr:not(.t-header), tr, .el-table__row, [class*="matrix-row"], [class*="table-row"]') || all[i].parentElement;
+    function scoreNodes(root) {
+        for (var s = 0; s < SCORE_SELECTORS.length; s++) {
+            var nodes = Array.prototype.slice.call(
+                root.querySelectorAll(SCORE_SELECTORS[s])
+            ).filter(visible);
+            if (nodes.length >= SCORE) return nodes;
+        }
+        return [];
+    }
+
+    // 从标签或带行 ID 的元素向上查找包含一组评分控件的最小容器。
+    // 不能直接返回 matrix，否则多行题会一直点击第一行。
+    function smallestScoredAncestor(start) {
+        var node = start;
+        var best = null;
+        var bestCount = Number.MAX_SAFE_INTEGER;
+        while (node && (node === matrix || matrix.contains(node))) {
+            var count = scoreNodes(node).length;
+            if (count >= SCORE && count < bestCount) {
+                best = node;
+                bestCount = count;
+            }
+            if (node === matrix) break;
+            node = node.parentElement;
+        }
+        if (best === matrix && ROWS.length > 1) return null;
+        return best;
+    }
+
+    function findByRowId(rowSpec) {
+        if (rowSpec.id === null || rowSpec.id === undefined) return null;
+        var id = String(rowSpec.id);
+        var selectors = [
+            '[data-row-id="' + id + '"]',
+            '[row-id="' + id + '"]',
+            '[data-id="' + id + '"]',
+            '[data-key="' + id + '"]',
+            '[id="' + id + '"]',
+            '[id*="' + id + '"]'
+        ];
+        for (var s = 0; s < selectors.length; s++) {
+            var matches = matrix.querySelectorAll(selectors[s]);
+            for (var i = 0; i < matches.length; i++) {
+                var row = smallestScoredAncestor(matches[i]);
+                if (row) return row;
             }
         }
         return null;
     }
 
-    function clickScore(row) {
-        var selectors = [
-            '.el-rate__item',
-            '.el-rate__icon',
-            '[class*="rate"] i',
-            '[class*="rate"] svg',
-            '[class*="star"]'
-        ];
-        for (var s = 0; s < selectors.length; s++) {
-            var nodes = Array.prototype.slice.call(row.querySelectorAll(selectors[s])).filter(visible);
-            if (nodes.length >= SCORE) {
-                var target = nodes[SCORE - 1];
-                target.scrollIntoView({block: 'center', behavior: 'instant'});
-                target.click();
-                return true;
+    function findByLabel(needle) {
+        var compactNeedle = norm(needle);
+        var shortNeedle = compactNeedle.slice(0, Math.min(10, compactNeedle.length));
+        var candidates = matrix.querySelectorAll(
+            '.mobile-matrix-scale > .card, .tr:not(.t-header), tr, .el-table__row, ' +
+            '[class*="matrix-row"], [class*="table-row"]'
+        );
+        var best = null;
+        var bestCount = Number.MAX_SAFE_INTEGER;
+        for (var c = 0; c < candidates.length; c++) {
+            var text = norm(candidates[c].textContent);
+            if (text.indexOf(compactNeedle) >= 0 || text.indexOf(shortNeedle) >= 0) {
+                var candidateRow = smallestScoredAncestor(candidates[c]);
+                if (candidateRow) {
+                    var count = scoreNodes(candidateRow).length;
+                    if (count < bestCount) {
+                        best = candidateRow;
+                        bestCount = count;
+                    }
+                }
             }
+        }
+        if (best) return best;
+
+        // 先选文本最接近行名的叶子元素，再向上找最小评分容器。
+        var all = matrix.querySelectorAll('*');
+        var textMatches = [];
+        for (var i = 0; i < all.length; i++) {
+            var t = norm(all[i].textContent);
+            if (t.indexOf(compactNeedle) >= 0 || t.indexOf(shortNeedle) >= 0) {
+                textMatches.push({element: all[i], textLength: t.length});
+            }
+        }
+        textMatches.sort(function(a, b) { return a.textLength - b.textLength; });
+        for (var m = 0; m < textMatches.length; m++) {
+            var row = smallestScoredAncestor(textMatches[m].element);
+            if (row) return row;
+        }
+        return null;
+    }
+
+    function findRow(rowSpec) {
+        return findByRowId(rowSpec) || findByLabel(rowSpec.label);
+    }
+
+    function clickScore(row) {
+        var nodes = scoreNodes(row);
+        if (nodes.length >= SCORE) {
+            var target = nodes[SCORE - 1];
+            target.scrollIntoView({block: 'center', behavior: 'instant'});
+            target.click();
+            return true;
         }
         return false;
     }
 
     for (var r = 0; r < ROWS.length; r++) {
-        var needle = ROWS[r];
+        var rowSpec = ROWS[r];
+        var needle = rowSpec.label;
         var found = false;
-        var row = findRow(needle);
+        var row = findRow(rowSpec);
 
         if (row) {
+            if (usedRows.indexOf(row) >= 0) {
+                results.push({row: needle, ok: false, error: 'duplicate_row_container'});
+                continue;
+            }
+            usedRows.push(row);
+            row.setAttribute('data-autowal-matrix-row', String(r));
             try {
                 if (clickScore(row)) {
-                    results.push({row: needle, ok: true});
+                    results.push({row: needle, index: r, ok: true});
                 } else {
-                    results.push({row: needle, ok: false, error: 'score_nodes_not_found'});
+                    results.push({row: needle, index: r, ok: false, error: 'score_nodes_not_found'});
                 }
                 found = true;
             } catch(e) {
-                results.push({row: needle, ok: false, error: 'click_failed'});
+                results.push({row: needle, index: r, ok: false, error: 'click_failed'});
                 found = true;
             }
         }
         if (!found) {
-            results.push({row: needle, ok: false, error: 'row_not_found'});
+            results.push({row: needle, index: r, ok: false, error: 'row_not_found'});
         }
     }
     return JSON.stringify(results);
@@ -776,19 +854,45 @@ MATRIX_JS = r"""
 """
 
 
+def build_matrix_script(item, score):
+    row_specs = [
+        {"id": row.get("id"), "label": row["label"]}
+        for row in item.get("rows", [])
+    ]
+    return (MATRIX_JS
+        .replace("<<FORM_ITEM_ID>>", json.dumps(item["formItemId"]))
+        .replace("<<ROWS>>", json.dumps(row_specs, ensure_ascii=False))
+        .replace("<<SCORE>>", str(score))
+    )
+
+
+def build_matrix_verification_script(item):
+    form_item_id = json.dumps(item["formItemId"])
+    return r"""
+        var FORM_ITEM_ID = %s;
+        var matrix = document.querySelector('[formitemid="' + FORM_ITEM_ID + '"]');
+        if (!matrix) return '[]';
+        var rows = matrix.querySelectorAll('[data-autowal-matrix-row]');
+        var results = [];
+        for (var i = 0; i < rows.length; i++) {
+            var rate = rows[i].querySelector('.el-rate[aria-valuenow]');
+            var value = rate ? Number(rate.getAttribute('aria-valuenow')) : null;
+            results.push({
+                index: Number(rows[i].getAttribute('data-autowal-matrix-row')),
+                selected: value
+            });
+            rows[i].removeAttribute('data-autowal-matrix-row');
+        }
+        return JSON.stringify(results);
+    """ % form_item_id
+
+
 def fill_matrix_scale(driver, item, rng):
     rows = item.get("rows", [])
     if not rows:
         return
-    form_item_id = item["formItemId"]
     score = rng.choice([7, 8, 9])
-    row_labels = [row["label"] for row in rows]
-
-    js_code = (MATRIX_JS
-        .replace("<<FORM_ITEM_ID>>", json.dumps(form_item_id))
-        .replace("<<ROWS>>", json.dumps(row_labels, ensure_ascii=False))
-        .replace("<<SCORE>>", str(score))
-    )
+    js_code = build_matrix_script(item, score)
 
     try:
         result_str = exec_js(driver, "return " + js_code.strip())
@@ -797,6 +901,23 @@ def fill_matrix_scale(driver, item, rng):
             return
 
         results = json.loads(result_str)
+        verification_str = exec_js(driver, build_matrix_verification_script(item), "[]")
+        verification = {
+            entry.get("index"): entry.get("selected")
+            for entry in json.loads(verification_str)
+        }
+        for result in results:
+            if not result.get("ok"):
+                continue
+            selected = verification.get(result.get("index"))
+            result["selected"] = selected
+            if selected != score:
+                result["ok"] = False
+                result["error"] = (
+                    "verification_not_found"
+                    if selected is None
+                    else "selection_not_applied"
+                )
         ok_count = sum(1 for r in results if r.get("ok"))
         _emit(f"  ✓ [矩阵] {item['title'][:35]}  ({ok_count}/{len(rows)} 行有效, 分值={score})")
         if DEBUG:

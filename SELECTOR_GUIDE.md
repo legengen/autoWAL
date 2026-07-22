@@ -129,7 +129,7 @@ formKey = yCWFPyRr
 问卷详情接口：
 
 ```text
-https://myd.iscn.org.cn/tduck-api/user/form/details/yCWFPyRr?sourceId=719419
+https://myd-cloud.iscn.org.cn/tduck-api/user/form/details/yCWFPyRr?sourceId=719419
 ```
 
 核心字段：
@@ -498,15 +498,17 @@ province_city1779700972110
 fill_matrix_scale(driver, item)
 ```
 
-真实 DOM 结构是自定义表格：
+当前线上 DOM（2026-07-22）已经从旧版 `.tr` 表格改为每行一个独立卡片：
 
 ```html
-<div formitemid="matrix_scale1779765006292" class="rt-container">
-  <div class="rt-table">
-    <div class="tr t-header">...</div>
-    <div class="tr">
-      <div class="td">网络不良信息治理成效：</div>
-      <div class="el-rate rate">
+<div formitemid="matrix_scale1779765006292"
+     class="rt-container mobile-matrix-scale">
+  <div class="card">
+    <div class="van-cell block-title">
+      <span>网络不良信息治理成效：</span>
+    </div>
+    <div class="card-body">
+      <div class="el-rate rate" aria-valuenow="0">
         <span class="el-rate__item">...</span>
       </div>
     </div>
@@ -524,9 +526,10 @@ fill_matrix_scale(driver, item)
 
 因为它会匹配页面外层的 `.el-row`，导致所有星星都从同一个大容器里找，实际只点第一行。
 
-当前只在当前矩阵题内部找真实行：
+当前先在矩阵题内部匹配新版卡片，同时保留旧版行选择器作为兼容：
 
 ```js
+.mobile-matrix-scale > .card,
 .tr:not(.t-header),
 tr,
 .el-table__row,
@@ -657,5 +660,5 @@ python3 auto_fill.py --headless --seed 123
 不能只用 JS element.click()
 题目必须优先用 formItemId 锚定
 弹层类控件必须防止复用旧 popup
-矩阵题必须按真实 .tr 行逐行定位
+矩阵题必须按独立 `.card`（兼容旧版 `.tr`）逐行定位，并校验每行 `.el-rate` 的 `aria-valuenow`
 ```
